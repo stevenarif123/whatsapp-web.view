@@ -2,16 +2,15 @@ package toast
 
 import (
 	"bytes"
+	"encoding/base64"
+	"encoding/xml"
 	"errors"
-	"io/ioutil"
-	"os"
+	"fmt"
 	"os/exec"
-	"path/filepath"
 	"strings"
-	"text/template"
-
-	"github.com/nu7hatch/gouuid"
 	"syscall"
+	"text/template"
+	"unicode/utf16"
 )
 
 var toastTemplate *template.Template
@@ -59,27 +58,28 @@ const (
 	Long                = "long"
 )
 
+func xmlEscape(s string) string {
+	var buf bytes.Buffer
+	_ = xml.EscapeText(&buf, []byte(s))
+	return buf.String()
+}
+
 func init() {
-	toastTemplate = template.New("toast")
-	toastTemplate.Parse(`
-[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-[Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
-[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
-
-$APP_ID = '{{if .AppID}}{{.AppID}}{{else}}Windows App{{end}}'
-
-$template = @"
-<toast activationType="{{.ActivationType}}" launch="{{.ActivationArguments}}" duration="{{.Duration}}">
+	funcMap := template.FuncMap{
+		"escape": xmlEscape,
+	}
+	toastTemplate = template.Must(template.New("toast").Funcs(funcMap).Parse(`
+<toast activationType="{{.ActivationType}}" launch="{{escape .ActivationArguments}}" duration="{{.Duration}}">
     <visual>
         <binding template="ToastGeneric">
             {{if .Icon}}
-            <image placement="appLogoOverride" src="{{.Icon}}" />
+            <image placement="appLogoOverride" src="{{escape .Icon}}" />
             {{end}}
             {{if .Title}}
-            <text><![CDATA[{{.Title}}]]></text>
+            <text>{{escape .Title}}</text>
             {{end}}
             {{if .Message}}
-            <text><![CDATA[{{.Message}}]]></text>
+            <text>{{escape .Message}}</text>
             {{end}}
         </binding>
     </visual>
@@ -91,18 +91,12 @@ $template = @"
     {{if .Actions}}
     <actions>
         {{range .Actions}}
-        <action activationType="{{.Type}}" content="{{.Label}}" arguments="{{.Arguments}}" />
+        <action activationType="{{.Type}}" content="{{escape .Label}}" arguments="{{escape .Arguments}}" />
         {{end}}
     </actions>
     {{end}}
 </toast>
-"@
-
-$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
-$xml.LoadXml($template)
-$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
-[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($APP_ID).Show($toast)
-    `)
+`))
 }
 
 // Notification
@@ -239,7 +233,11 @@ func (n *Notification) Push() error {
 	if err != nil {
 		return err
 	}
-	return invokeTemporaryScript(xml)
+	appID := n.AppID
+	if appID == "" {
+		appID = "Windows App"
+	}
+	return invokePowerShellToast(appID, xml)
 }
 
 // Returns a toastAudio given a user-provided input (useful for cli apps).
@@ -340,20 +338,36 @@ func Duration(name string) (toastDuration, error) {
 	}
 }
 
-func invokeTemporaryScript(content string) error {
-	id, _ := uuid.NewV4()
-	file := filepath.Join(os.TempDir(), id.String()+".ps1")
-	defer os.Remove(file)
-	bomUtf8 := []byte{0xEF, 0xBB, 0xBF}
-	out := append(bomUtf8, []byte(content)...)
-	err := ioutil.WriteFile(file, out, 0600)
-	if err != nil {
-		return err
+func invokePowerShellToast(appID, xmlStr string) error {
+	appIdB64 := base64.StdEncoding.EncodeToString([]byte(appID))
+	xmlB64 := base64.StdEncoding.EncodeToString([]byte(xmlStr))
+
+	script := fmt.Sprintf(`$ProgressPreference = 'SilentlyContinue'
+[Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+[Windows.UI.Notifications.ToastNotification, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
+[Windows.Data.Xml.Dom.XmlDocument, Windows.Data.Xml.Dom.XmlDocument, ContentType = WindowsRuntime] | Out-Null
+
+$appId = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('%s'))
+$xmlText = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('%s'))
+$xml = New-Object Windows.Data.Xml.Dom.XmlDocument
+$xml.LoadXml($xmlText)
+$toast = New-Object Windows.UI.Notifications.ToastNotification $xml
+[Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
+`, appIdB64, xmlB64)
+
+	utf16 := utf16.Encode([]rune(script))
+	buf := make([]byte, len(utf16)*2)
+	for i, v := range utf16 {
+		buf[i*2] = byte(v)
+		buf[i*2+1] = byte(v >> 8)
 	}
-	cmd := exec.Command("PowerShell", "-ExecutionPolicy", "Bypass", "-File", file)
+	encodedCmd := base64.StdEncoding.EncodeToString(buf)
+
+	cmd := exec.Command("PowerShell", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-EncodedCommand", encodedCmd)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	if err = cmd.Run(); err != nil {
-		return err
-	}
-	return nil
+	return cmd.Run()
+}
+
+func invokeTemporaryScript(content string) error {
+	return invokePowerShellToast("Windows App", content)
 }

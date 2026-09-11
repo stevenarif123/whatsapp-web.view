@@ -372,6 +372,11 @@ func (w *webview) Run() {
 		} else if msg.Message == w32.WMQuit {
 			return
 		}
+		if (msg.Message == 0x0100 || msg.Message == 0x0101) && msg.WParam == 0x09 {
+			_, _, _ = w32.User32TranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
+			_, _, _ = w32.User32DispatchMessageW.Call(uintptr(unsafe.Pointer(&msg)))
+			continue
+		}
 		r, _, _ := w32.User32GetAncestor.Call(uintptr(msg.Hwnd), w32.GARoot)
 		r, _, _ = w32.User32IsDialogMessage.Call(r, uintptr(unsafe.Pointer(&msg)))
 		if r != 0 {

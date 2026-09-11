@@ -5,8 +5,10 @@ package edge
 
 import (
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync/atomic"
 	"unsafe"
 
@@ -184,8 +186,8 @@ func (e *Chromium) EnvironmentCompleted(res uintptr, env *ICoreWebView2Environme
 }
 
 func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller *ICoreWebView2Controller) uintptr {
-	if int64(res) < 0 {
-		log.Fatalf("Creating controller failed with %08x", res)
+	if int32(res) < 0 || controller == nil {
+		log.Fatalf("Creating controller failed with res=%08x, controller=%p", res, controller)
 	}
 	_, _, _ = controller.vtbl.AddRef.Call(uintptr(unsafe.Pointer(controller)))
 	e.controller = controller
@@ -261,16 +263,39 @@ func (e *Chromium) PermissionRequested(_ *ICoreWebView2, args *iCoreWebView2Perm
 		uintptr(unsafe.Pointer(args)),
 		uintptr(unsafe.Pointer(&kind)),
 	)
-	var result CoreWebView2PermissionState
-	if e.globalPermission != nil {
-		result = *e.globalPermission
-	} else {
-		var ok bool
-		result, ok = e.permissions[kind]
-		if !ok {
-			result = CoreWebView2PermissionStateDefault
+
+	var uriPtr *uint16
+	_, _, _ = args.vtbl.GetURI.Call(
+		uintptr(unsafe.Pointer(args)),
+		uintptr(unsafe.Pointer(&uriPtr)),
+	)
+	var isAllowedOrigin bool
+	if uriPtr != nil {
+		reqURI := w32.Utf16PtrToString(uriPtr)
+		windows.CoTaskMemFree(unsafe.Pointer(uriPtr))
+		if parsed, err := url.Parse(reqURI); err == nil {
+			host := strings.ToLower(parsed.Hostname())
+			if parsed.Scheme == "https" && (host == "web.whatsapp.com" || host == "whatsapp.com" || strings.HasSuffix(host, ".whatsapp.com") || strings.HasSuffix(host, ".whatsapp.net") || host == "web.telegram.org" || host == "telegram.org" || strings.HasSuffix(host, ".telegram.org")) {
+				isAllowedOrigin = true
+			}
 		}
 	}
+
+	var result CoreWebView2PermissionState
+	if isAllowedOrigin {
+		if e.globalPermission != nil {
+			result = *e.globalPermission
+		} else {
+			var ok bool
+			result, ok = e.permissions[kind]
+			if !ok {
+				result = CoreWebView2PermissionStateDefault
+			}
+		}
+	} else {
+		result = CoreWebView2PermissionStateDeny
+	}
+
 	_, _, _ = args.vtbl.PutState.Call(
 		uintptr(unsafe.Pointer(args)),
 		uintptr(result),
