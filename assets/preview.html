@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><title>Preview Control Center</title>
+<link rel="stylesheet" href="addon.css">
+<style>body{margin:0;background:#0b141a;font-family:var(--wa-font);color:#e9edef;height:100vh} .tw{padding:24px}</style>
+</head><body>
+<div class="tw"><button class="wa-btn wa-btn-primary" onclick="document.getElementById('wa-addon-modal').style.display='flex'">Buka Control Center</button></div>
+<div id="wa-addon-modal" class="wa-modal-backdrop" style="display:flex"></div>
+<script>
+fetch('control-center.html').then(r=>r.text()).then(function(h){
+  var m=document.getElementById('wa-addon-modal'); m.innerHTML=h;
+  var btns=m.querySelectorAll('.wa-tab-btn'),panes=m.querySelectorAll('.wa-tab-pane');
+  btns.forEach(function(b){b.onclick=function(){btns.forEach(x=>x.classList.remove('active'));b.classList.add('active');
+    panes.forEach(function(p){p.style.display=(p.id==='wa-tab-content-'+b.dataset.tab)?'flex':'none'});};});
+  var t=new URLSearchParams(location.search).get('tab'); if(t){var b=m.querySelector('[data-tab='+t+']'); b&&b.click();}
+  m.querySelector('#wa-cc-close').onclick=function(){m.style.display='none'};
+  document.getElementById('wa-theme-default').classList.add('active');
+  document.getElementById('wa-blur-btn-5').classList.add('active');
+  document.getElementById('wa-cc-pin-cb').checked=true;
+  document.getElementById('wa-pin-count').textContent='3';
+  var pl=document.getElementById('wa-pin-list');
+  ['Keluarga','Toko Online','Budi Santoso'].forEach(function(n){var r=document.createElement('div');r.className='wa-row';r.innerHTML='<div class="wa-row-title">'+n+'</div><button class="wa-btn wa-btn-secondary wa-btn-sm">Lepas</button>';pl.appendChild(r)});
+  var ql=document.getElementById('wa-qr-list');
+  [['/toko','Halo kak, toko buka jam 08.00–21.00'],['/norek','BCA 1234567890 a.n. Toko']].forEach(function(q){var r=document.createElement('div');r.className='wa-row';r.innerHTML='<div style="display:flex;gap:10px;overflow:hidden"><b style="color:var(--wa-primary-text);font-family:var(--wa-mono);font-size:12px">'+q[0]+'</b><span style="color:var(--wa-text-muted);font-size:12px">'+q[1]+'</span></div>';ql.appendChild(r)});
+});
+</script></body></html>

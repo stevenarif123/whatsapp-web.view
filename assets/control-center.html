@@ -1,0 +1,334 @@
+<div class="wa-modal-box wa-cc-box" role="dialog" aria-modal="true" aria-labelledby="wa-cc-title">
+  <div class="wa-modal-header">
+    <div class="wa-header-left">
+      <div class="wa-header-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+      </div>
+      <div>
+        <h3 id="wa-cc-title" class="wa-header-title">Pusat Kontrol</h3>
+        <p class="wa-header-subtitle">Privasi, tampilan, dan alat bantu untuk WhatsApp Anda</p>
+      </div>
+    </div>
+    <button id="wa-cc-close" class="wa-close-btn" title="Tutup (Esc)" aria-label="Tutup">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <nav class="wa-tab-bar" aria-label="Bagian pengaturan">
+    <button class="wa-tab-btn active" data-tab="stealth">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span>Privasi</span>
+    </button>
+    <button class="wa-tab-btn" data-tab="theme">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <span>Tampilan</span>
+    </button>
+    <button class="wa-tab-btn" data-tab="productivity">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Chat &amp; Alat</span>
+    </button>
+    <button class="wa-tab-btn" data-tab="system">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <span>Sistem</span>
+    </button>
+    <button class="wa-tab-btn" data-tab="diag">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      <span>Diagnostik</span>
+    </button>
+    <div class="wa-tab-spacer"></div>
+    <div class="wa-tab-hint"><span class="wa-kbd">Alt</span> + <span class="wa-kbd">M</span> membuka panel ini kapan saja.</div>
+  </nav>
+
+  <div class="wa-modal-body">
+
+    <!-- PRIVASI -->
+    <div id="wa-tab-content-stealth" class="wa-tab-pane" style="display:flex;">
+      <div class="wa-pane-head">
+        <h4 class="wa-pane-title">Privasi layar</h4>
+        <p class="wa-pane-lead">Buramkan isi obrolan agar tidak terbaca orang di sekitar. Arahkan kursor ke bagian yang buram untuk mengintipnya.</p>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Blur layar</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Mode Privasi</div>
+              <div class="wa-row-desc">Pintasan <span class="wa-kbd">Alt</span> + <span class="wa-kbd">P</span></div>
+            </div>
+            <button id="wa-cc-privacy-btn" class="wa-btn wa-btn-secondary">Status: Nonaktif</button>
+          </div>
+          <div class="wa-row wa-row-stack">
+            <div class="wa-row-title">Bagian yang diburamkan</div>
+            <div class="wa-check-grid">
+              <label class="wa-check"><input type="checkbox" id="wa-cc-blur-contacts"> Nama kontak</label>
+              <label class="wa-check"><input type="checkbox" id="wa-cc-blur-preview"> Pratinjau pesan</label>
+              <label class="wa-check"><input type="checkbox" id="wa-cc-blur-messages"> Balon obrolan</label>
+              <label class="wa-check"><input type="checkbox" id="wa-cc-blur-media"> Foto &amp; video</label>
+              <label class="wa-check"><input type="checkbox" id="wa-cc-blur-avatars"> Foto profil</label>
+            </div>
+          </div>
+          <div class="wa-row">
+            <div class="wa-row-title">Intensitas blur</div>
+            <div class="wa-segmented">
+              <button id="wa-blur-btn-3" class="wa-segmented-btn">Halus</button>
+              <button id="wa-blur-btn-5" class="wa-segmented-btn">Sedang</button>
+              <button id="wa-blur-btn-8" class="wa-segmented-btn">Kuat</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Tangkapan layar</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Mode Screenshot Anonim</div>
+              <div class="wa-row-desc">Samarkan nama, nomor, dan foto profil sebelum <span class="wa-kbd">Win</span> + <span class="wa-kbd">Shift</span> + <span class="wa-kbd">S</span></div>
+            </div>
+            <button id="wa-cc-anon-btn" class="wa-btn wa-btn-secondary">Aktifkan</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="wa-callout">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <div><b>Aman untuk akun Anda.</b> Semua fitur di sini hanya mengubah tampilan di layar ini. Tidak ada yang memodifikasi koneksi atau enkripsi WhatsApp.</div>
+      </div>
+    </div>
+
+    <!-- TAMPILAN -->
+    <div id="wa-tab-content-theme" class="wa-tab-pane" style="display:none;">
+      <div class="wa-pane-head">
+        <h4 class="wa-pane-title">Tampilan</h4>
+        <p class="wa-pane-lead">Atur tema, kepadatan daftar chat, ukuran antarmuka, dan kecepatan voice note.</p>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Tema</div>
+        <div class="wa-group">
+          <div class="wa-theme-grid">
+            <div id="wa-theme-default" class="wa-theme-card active">
+              <div class="wa-theme-swatch" style="background:#111b21;"></div>
+              <span>Standar gelap</span>
+            </div>
+            <div id="wa-theme-oled" class="wa-theme-card">
+              <div class="wa-theme-swatch" style="background:#000000;"></div>
+              <span>OLED hitam</span>
+            </div>
+            <div id="wa-theme-warm" class="wa-theme-card">
+              <div class="wa-theme-swatch" style="background:#1d1b17;border-color:rgba(217,119,6,0.35);"></div>
+              <span>Layar hangat</span>
+            </div>
+          </div>
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Daftar chat rapat</div>
+              <div class="wa-row-desc">Padatkan baris obrolan agar lebih banyak kontak terlihat</div>
+            </div>
+            <label class="wa-switch"><input type="checkbox" id="wa-compact-cb"><span class="wa-slider"></span></label>
+          </div>
+        </div>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Ukuran &amp; suara</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Zoom antarmuka</div>
+              <div class="wa-row-desc"><span class="wa-kbd">Ctrl</span> + <span class="wa-kbd">+</span> / <span class="wa-kbd">-</span> / <span class="wa-kbd">0</span></div>
+            </div>
+            <div class="wa-segmented">
+              <button id="wa-cc-zoom-out" class="wa-segmented-btn" title="Perkecil">−</button>
+              <button id="wa-cc-zoom-reset" class="wa-segmented-btn" title="Reset (100%)">Reset</button>
+              <button id="wa-cc-zoom-in" class="wa-segmented-btn" title="Perbesar">+</button>
+            </div>
+          </div>
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Kecepatan voice note</div>
+              <div class="wa-row-desc">Juga bisa diatur dengan <span class="wa-kbd">[</span> dan <span class="wa-kbd">]</span></div>
+            </div>
+            <div class="wa-row-actions">
+              <button class="wa-audio-btn wa-btn wa-btn-secondary wa-btn-sm" data-spd="1.0">1.0×</button>
+              <button class="wa-audio-btn wa-btn wa-btn-secondary wa-btn-sm" data-spd="1.25">1.25×</button>
+              <button class="wa-audio-btn wa-btn wa-btn-secondary wa-btn-sm" data-spd="1.5">1.5×</button>
+              <button class="wa-audio-btn wa-btn wa-btn-secondary wa-btn-sm" data-spd="2.0">2.0×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAT & ALAT -->
+    <div id="wa-tab-content-productivity" class="wa-tab-pane" style="display:none;">
+      <div class="wa-pane-head">
+        <h4 class="wa-pane-title">Chat &amp; alat</h4>
+        <p class="wa-pane-lead">Cepat menemukan chat penting, memantau kontak, dan mempercepat balasan.</p>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Daftar chat</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Filter belum dibaca</div>
+              <div class="wa-row-desc">Hanya tampilkan obrolan yang belum dibaca</div>
+            </div>
+            <button id="wa-cc-unread-toggle" class="wa-btn wa-btn-secondary">Aktifkan Filter</button>
+          </div>
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Pin chat tanpa batas <span id="wa-pin-count" class="wa-tag" style="margin-left:6px;">0</span></div>
+              <div class="wa-row-desc">Arahkan kursor ke sebuah chat lalu klik ikon pin. Pin hanya tersimpan di komputer ini.</div>
+            </div>
+            <label class="wa-switch"><input type="checkbox" id="wa-cc-pin-cb"><span class="wa-slider"></span></label>
+          </div>
+          <div id="wa-pin-list"></div>
+        </div>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Radar online</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Beri tahu saat kontak online</div>
+              <div class="wa-row-desc">Muncul toast saat kontak di chat yang sedang terbuka berubah menjadi online atau mulai mengetik.</div>
+            </div>
+            <label class="wa-switch"><input type="checkbox" id="wa-cc-radar-cb"><span class="wa-slider"></span></label>
+          </div>
+          <div class="wa-row wa-row-stack">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Hanya untuk kontak ini</div>
+              <div class="wa-row-desc">Pisahkan dengan koma. Kosongkan untuk semua kontak.</div>
+            </div>
+            <input id="wa-cc-radar-names" class="wa-input" type="text" placeholder="Contoh: Budi, Siti">
+          </div>
+        </div>
+        <div class="wa-callout wa-callout-warn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div>WhatsApp hanya mengirim status online untuk chat yang sedang Anda buka, dan hanya jika kontak mengizinkannya. Radar tidak bisa memantau chat di latar belakang.</div>
+        </div>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Alat</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Catatan tempel</div>
+              <div class="wa-row-desc">Panel memo samping dengan simpan otomatis (<span class="wa-kbd">Alt</span> + <span class="wa-kbd">N</span>)</div>
+            </div>
+            <button id="wa-cc-scratchpad-btn" class="wa-btn wa-btn-secondary">Buka Catatan</button>
+          </div>
+          <div class="wa-row wa-row-stack">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Chat ke nomor baru</div>
+              <div class="wa-row-desc">Tanpa menyimpan kontak (<span class="wa-kbd">Ctrl</span> + <span class="wa-kbd">N</span>). Nomor <b>08…</b> otomatis menjadi <b>628…</b></div>
+            </div>
+            <div class="wa-field-row">
+              <input id="wa-cc-phone" class="wa-input" type="text" placeholder="08123456789 atau 628…" style="flex:1;">
+              <button id="wa-cc-phone-btn" class="wa-btn wa-btn-primary">Buka Chat</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Balasan cepat</div>
+        <div class="wa-group">
+          <div class="wa-row wa-row-stack" style="padding-bottom:6px;">
+            <div class="wa-row-desc" style="margin:0;">Ketik <b>/pintasan</b> di chat, lalu tekan Tab, Enter, atau Spasi untuk memunculkan teks lengkap.</div>
+          </div>
+          <div id="wa-qr-list"></div>
+          <div class="wa-row">
+            <div class="wa-field-row" style="width:100%;">
+              <input id="wa-qr-new-key" class="wa-input" type="text" placeholder="/pintasan" style="width:120px;">
+              <input id="wa-qr-new-text" class="wa-input" type="text" placeholder="Teks balasan…" style="flex:1;">
+              <button id="wa-qr-add-btn" class="wa-btn wa-btn-primary">Tambah</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SISTEM -->
+    <div id="wa-tab-content-system" class="wa-tab-pane" style="display:none;">
+      <div class="wa-pane-head">
+        <h4 class="wa-pane-title">Sistem</h4>
+        <p class="wa-pane-lead">Kunci aplikasi, beberapa akun dan messenger, serta pemeliharaan.</p>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Kunci aplikasi</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Kunci dengan PIN</div>
+              <div class="wa-row-desc">Terkunci otomatis setelah 5 menit tidak aktif (<span class="wa-kbd">Ctrl</span> + <span class="wa-kbd">L</span>). PIN awal: 1234.</div>
+            </div>
+            <div class="wa-row-actions">
+              <button id="wa-cc-lock-btn" class="wa-btn wa-btn-secondary">Kunci Sekarang</button>
+              <button id="wa-cc-changepin-btn" class="wa-btn wa-btn-primary">Ganti PIN</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Akun &amp; messenger</div>
+        <div class="wa-group">
+          <div class="wa-btn-grid">
+            <button id="wa-cc-dual-acc-btn" class="wa-btn wa-btn-secondary">Akun WhatsApp ke-2</button>
+            <button id="wa-cc-filter-unread-btn" class="wa-btn wa-btn-secondary">Filter belum dibaca</button>
+            <button id="wa-cc-tg-btn" class="wa-btn wa-btn-tg">Telegram Web (Ctrl+2)</button>
+            <button id="wa-cc-split-btn" class="wa-btn wa-btn-tg-outline">Berdampingan 50:50 (Ctrl+3)</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Startup &amp; pemeliharaan</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Mulai otomatis saat Windows menyala</div>
+              <div class="wa-row-desc">Berjalan tersembunyi di System Tray. Boss Key global: <span class="wa-kbd">Ctrl</span> + <span class="wa-kbd">Alt</span> + <span class="wa-kbd">W</span></div>
+            </div>
+            <label class="wa-switch"><input type="checkbox" id="wa-cc-autostart-cb"><span class="wa-slider"></span></label>
+          </div>
+          <div class="wa-btn-grid">
+            <button id="wa-cc-reload-btn" class="wa-btn wa-btn-secondary">Muat ulang halaman</button>
+            <button id="wa-cc-logout-btn" class="wa-btn wa-btn-danger">Reset sesi login</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIAGNOSTIK -->
+    <div id="wa-tab-content-diag" class="wa-tab-pane" style="display:none;">
+      <div class="wa-pane-head">
+        <h4 class="wa-pane-title">Diagnostik</h4>
+        <p class="wa-pane-lead">WhatsApp Web sering mengubah struktur halamannya. Pemeriksaan ini menunjukkan elemen mana yang masih dikenali, supaya fitur yang tidak jalan mudah dilacak.</p>
+      </div>
+
+      <div class="wa-section">
+        <div class="wa-section-label">Pemeriksaan elemen WhatsApp</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Cek selektor</div>
+              <div class="wa-row-desc" id="wa-diag-summary">Belum dijalankan.</div>
+            </div>
+            <button id="wa-diag-run" class="wa-btn wa-btn-primary">Jalankan Pemeriksaan</button>
+          </div>
+          <div id="wa-diag-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

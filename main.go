@@ -1,6 +1,8 @@
 package main
 
 import (
+	_ "embed"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/url"
@@ -15,6 +17,21 @@ import (
 	"github.com/jchv/go-webview2"
 	"golang.org/x/sys/windows"
 )
+
+//go:embed assets/addon.css
+var addonCSS string
+
+//go:embed assets/control-center.html
+var controlCenterHTML string
+
+//go:embed assets/addon-core.js
+var addonCoreJS string
+
+// jsString returns s as a quoted JavaScript string literal.
+func jsString(s string) string {
+	b, _ := json.Marshal(s)
+	return string(b)
+}
 
 var (
 	kernel32             = windows.NewLazySystemDLL("kernel32.dll")
@@ -2151,7 +2168,7 @@ func main() {
 	})
 
 	// Injected JavaScript: User-Agent, Notification Polyfill, Link Isolation, Privacy Mode, and Unread Message Observer
-	initScript := `
+	initScript := "var WA_ADDON_CSS = " + jsString(addonCSS) + ";"+"\n"+"var WA_CC_HTML = " + jsString(controlCenterHTML) + ";"+"\n" + `
 		// UserAgent override
 		Object.defineProperty(navigator, 'userAgent', {
 			get: () => '` + userAgent + `'
@@ -2301,7 +2318,7 @@ func main() {
 			blurMessages: true,
 			blurMedia: true,
 			blurAvatars: false,
-			blurIntensity: 4
+			blurIntensity: 5
 		};
 
 		try {
@@ -2325,105 +2342,7 @@ func main() {
 			if (document.getElementById('wa-impeccable-styles')) return;
 			var style = document.createElement('style');
 			style.id = 'wa-impeccable-styles';
-			style.textContent = [
-				':root {',
-				'  --wa-bg: #111b21;',
-				'  --wa-bg-elevated: #182229;',
-				'  --wa-bg-card: #1f2c34;',
-				'  --wa-bg-hover: #222e35;',
-				'  --wa-border: rgba(134, 150, 160, 0.14);',
-				'  --wa-border-strong: rgba(134, 150, 160, 0.28);',
-				'  --wa-primary: #00a884;',
-				'  --wa-primary-hover: #02906f;',
-				'  --wa-primary-subtle: rgba(0, 168, 132, 0.12);',
-				'  --wa-tg: #24A1DE;',
-				'  --wa-tg-subtle: rgba(36, 161, 222, 0.12);',
-				'  --wa-danger: #ef4444;',
-				'  --wa-danger-subtle: rgba(239, 68, 68, 0.12);',
-				'  --wa-text: #e9edef;',
-				'  --wa-text-muted: #8696a0;',
-				'  --wa-text-dim: #667781;',
-				'  --wa-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;',
-				'  --wa-shadow-modal: 0 24px 60px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(255, 255, 255, 0.08);',
-				'  --wa-shadow-dock: 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08);',
-				'  --wa-radius-sm: 6px;',
-				'  --wa-radius-md: 10px;',
-				'  --wa-radius-lg: 14px;',
-				'  --wa-ease: cubic-bezier(0.16, 1, 0.3, 1);',
-				'}',
-				'#wa-addon-modal ::-webkit-scrollbar, #wa-scratchpad-drawer ::-webkit-scrollbar, #wa-qr-list ::-webkit-scrollbar { width: 5px; height: 5px; }',
-				'#wa-addon-modal ::-webkit-scrollbar-track, #wa-scratchpad-drawer ::-webkit-scrollbar-track, #wa-qr-list ::-webkit-scrollbar-track { background: transparent; }',
-				'#wa-addon-modal ::-webkit-scrollbar-thumb, #wa-scratchpad-drawer ::-webkit-scrollbar-thumb, #wa-qr-list ::-webkit-scrollbar-thumb { background: rgba(134, 150, 160, 0.22); border-radius: 4px; }',
-				'#wa-addon-modal ::-webkit-scrollbar-thumb:hover, #wa-scratchpad-drawer ::-webkit-scrollbar-thumb:hover, #wa-qr-list ::-webkit-scrollbar-thumb:hover { background: rgba(134, 150, 160, 0.38); }',
-				'.wa-modal-backdrop { display:none; position:fixed; inset:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); z-index:99999999; align-items:center; justify-content:center; font-family:var(--wa-font); user-select:none; animation:waFadeIn 0.18s var(--wa-ease); }',
-				'@keyframes waFadeIn { from { opacity: 0; } to { opacity: 1; } }',
-				'.wa-modal-box { background:var(--wa-bg); border:1px solid var(--wa-border); color:var(--wa-text); width:600px; max-height:86vh; border-radius:var(--wa-radius-lg); box-shadow:var(--wa-shadow-modal); display:flex; flex-direction:column; overflow:hidden; box-sizing:border-box; animation:waSlideUp 0.2s var(--wa-ease); }',
-				'@keyframes waSlideUp { from { opacity:0; transform:translateY(8px) scale(0.98); } to { opacity:1; transform:translateY(0) scale(1); } }',
-				'.wa-modal-header { padding:16px 22px; border-bottom:1px solid var(--wa-border); display:flex; align-items:center; justify-content:space-between; background:var(--wa-bg-elevated); }',
-				'.wa-header-left { display:flex; align-items:center; gap:12px; }',
-				'.wa-header-icon { width:34px; height:34px; border-radius:9px; background:var(--wa-primary-subtle); border:1px solid rgba(0,168,132,0.25); display:flex; align-items:center; justify-content:center; color:var(--wa-primary); flex-shrink:0; }',
-				'.wa-header-title { margin:0; font-size:15px; font-weight:600; color:var(--wa-text); letter-spacing:-0.01em; }',
-				'.wa-header-subtitle { margin:2px 0 0 0; font-size:11.5px; color:var(--wa-text-muted); }',
-				'.wa-close-btn { background:none; border:none; color:var(--wa-text-muted); cursor:pointer; width:30px; height:30px; border-radius:50%; display:flex; align-items:center; justify-content:center; transition:all 0.15s ease; outline:none; }',
-				'.wa-close-btn:hover { color:var(--wa-text); background:rgba(255,255,255,0.06); }',
-				'.wa-tab-bar { display:flex; border-bottom:1px solid var(--wa-border); background:var(--wa-bg); padding:0 16px; gap:4px; }',
-				'.wa-tab-btn { background:none; border:none; color:var(--wa-text-muted); padding:11px 14px; font-size:12px; font-weight:500; cursor:pointer; border-bottom:2px solid transparent; transition:all 0.18s var(--wa-ease); font-family:var(--wa-font); outline:none; user-select:none; display:flex; align-items:center; gap:7px; }',
-				'.wa-tab-btn:hover { color:var(--wa-text); }',
-				'.wa-tab-btn.active { color:var(--wa-primary); font-weight:600; border-bottom-color:var(--wa-primary); }',
-				'.wa-modal-body { flex:1; overflow-y:auto; padding:18px 22px; display:flex; flex-direction:column; gap:14px; }',
-				'.wa-card { background:var(--wa-bg-elevated); border-radius:var(--wa-radius-md); border:1px solid var(--wa-border); padding:15px 18px; display:flex; flex-direction:column; gap:12px; }',
-				'.wa-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:2px; }',
-				'.wa-card-title { font-size:12px; font-weight:600; color:var(--wa-primary); display:flex; align-items:center; gap:7px; text-transform:uppercase; letter-spacing:0.04em; }',
-				'.wa-row { display:flex; align-items:center; justify-content:space-between; gap:16px; }',
-				'.wa-row + .wa-row { border-top:1px solid var(--wa-border); padding-top:11px; }',
-				'.wa-row-title { font-size:13px; font-weight:500; color:var(--wa-text); }',
-				'.wa-row-desc { font-size:11.5px; color:var(--wa-text-muted); line-height:1.4; margin-top:1px; }',
-				'.wa-switch { position:relative; display:inline-block; width:36px; height:20px; flex-shrink:0; cursor:pointer; }',
-				'.wa-switch input { opacity:0; width:0; height:0; position:absolute; }',
-				'.wa-slider { position:absolute; cursor:pointer; inset:0; background-color:#2a3942; transition:all 0.22s var(--wa-ease); border-radius:20px; border:1px solid rgba(255,255,255,0.06); }',
-				'.wa-slider:before { position:absolute; content:""; height:14px; width:14px; left:2px; bottom:2px; background-color:#e9edef; transition:transform 0.22s var(--wa-ease); border-radius:50%; box-shadow:0 1px 3px rgba(0,0,0,0.4); }',
-				'.wa-switch input:checked + .wa-slider { background-color:var(--wa-primary); border-color:var(--wa-primary); }',
-				'.wa-switch input:checked + .wa-slider:before { transform:translateX(16px); background-color:#ffffff; }',
-				'.wa-btn { font-family:var(--wa-font); display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:12px; font-weight:500; padding:7px 14px; border-radius:var(--wa-radius-sm); cursor:pointer; outline:none; transition:all 0.15s var(--wa-ease); border:1px solid transparent; user-select:none; white-space:nowrap; }',
-				'.wa-btn-primary { background:var(--wa-primary); color:#111b21; font-weight:600; border-color:var(--wa-primary); }',
-				'.wa-btn-primary:hover { background:var(--wa-primary-hover); border-color:var(--wa-primary-hover); }',
-				'.wa-btn-secondary { background:var(--wa-bg); color:var(--wa-text); border-color:var(--wa-border); }',
-				'.wa-btn-secondary:hover { background:var(--wa-bg-hover); border-color:var(--wa-border-strong); }',
-				'.wa-btn-tg { background:var(--wa-tg); color:#ffffff; font-weight:600; border-color:var(--wa-tg); }',
-				'.wa-btn-tg:hover { background:#1d88be; }',
-				'.wa-btn-danger { background:var(--wa-danger-subtle); color:var(--wa-danger); border-color:rgba(239,68,68,0.3); font-weight:600; }',
-				'.wa-btn-danger:hover { background:rgba(239,68,68,0.2); }',
-				'.wa-input { font-family:var(--wa-font); background:var(--wa-bg); border:1px solid var(--wa-border); color:var(--wa-text); padding:8px 12px; border-radius:var(--wa-radius-sm); font-size:12.5px; outline:none; transition:all 0.15s ease; box-sizing:border-box; }',
-				'.wa-input:focus { border-color:var(--wa-primary); box-shadow:0 0 0 1px var(--wa-primary); }',
-				'.wa-input::placeholder { color:var(--wa-text-dim); }',
-				'.wa-theme-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }',
-				'.wa-theme-card { background:var(--wa-bg); border:1px solid var(--wa-border); border-radius:var(--wa-radius-md); padding:12px; display:flex; flex-direction:column; align-items:center; gap:8px; cursor:pointer; transition:all 0.15s ease; color:var(--wa-text); font-size:12px; font-weight:500; }',
-				'.wa-theme-card:hover { background:var(--wa-bg-hover); border-color:var(--wa-border-strong); }',
-				'.wa-theme-card.active { border-color:var(--wa-primary); background:var(--wa-primary-subtle); color:var(--wa-primary); font-weight:600; }',
-				'.wa-theme-swatch { width:100%; height:24px; border-radius:4px; border:1px solid rgba(255,255,255,0.08); }',
-				'.wa-segmented { display:inline-flex; background:var(--wa-bg); border:1px solid var(--wa-border); border-radius:var(--wa-radius-sm); padding:2px; gap:2px; }',
-				'.wa-segmented-btn { background:none; border:none; color:var(--wa-text-muted); font-size:11.5px; font-weight:500; padding:5px 12px; border-radius:4px; cursor:pointer; transition:all 0.15s ease; font-family:var(--wa-font); outline:none; }',
-				'.wa-segmented-btn:hover { color:var(--wa-text); }',
-				'.wa-segmented-btn.active { background:var(--wa-primary); color:#111b21; font-weight:600; }',
-				'.wa-dock { position:fixed !important; bottom:14px !important; left:14px !important; z-index:2147483647 !important; display:flex !important; align-items:center !important; gap:3px !important; background:rgba(17,27,33,0.96) !important; backdrop-filter:blur(20px) !important; -webkit-backdrop-filter:blur(20px) !important; border:1px solid rgba(255,255,255,0.12) !important; padding:3px 5px !important; border-radius:24px !important; box-shadow:var(--wa-shadow-dock) !important; user-select:none !important; font-family:var(--wa-font) !important; pointer-events:auto !important; visibility:visible !important; }',
-				'.wa-dock-item { display:flex; align-items:center; gap:6px; padding:5px 11px; border-radius:18px; font-size:12px; font-weight:500; color:var(--wa-text-muted); background:transparent; border:none; cursor:pointer; transition:all 0.15s var(--wa-ease); outline:none; white-space:nowrap; }',
-				'.wa-dock-item:hover { color:var(--wa-text); background:rgba(255,255,255,0.06); }',
-				'.wa-dock-item.active { background:rgba(0,168,132,0.18); color:var(--wa-primary); font-weight:600; cursor:default; }',
-				'.wa-dock-sep { width:1px; height:14px; background:var(--wa-border); margin:0 1px; }',
-				'.wa-status-dot { width:6px; height:6px; border-radius:50%; background:var(--wa-primary); display:inline-block; }',
-				'.wa-toast { position:fixed; bottom:24px; right:24px; background:rgba(17,27,33,0.94); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); color:var(--wa-text); border:1px solid var(--wa-border-strong); padding:10px 18px; border-radius:var(--wa-radius-md); font-size:12.5px; font-weight:500; z-index:999999999; font-family:var(--wa-font); box-shadow:0 12px 32px rgba(0,0,0,0.5); pointer-events:none; opacity:0; transform:translateY(6px); transition:all 0.22s var(--wa-ease); display:flex; align-items:center; gap:8px; }',
-				'.wa-toast.show { opacity:1; transform:translateY(0); }',
-				'.wa-scratchpad { position:fixed; top:0; right:-360px; width:340px; height:100vh; background:var(--wa-bg); border-left:1px solid var(--wa-border); z-index:9999998; box-shadow:-8px 0 32px rgba(0,0,0,0.7); display:flex; flex-direction:column; font-family:var(--wa-font); transition:right 0.25s var(--wa-ease); box-sizing:border-box; user-select:none; }',
-				'.wa-qr-popup { position:fixed !important; z-index:2147483647 !important; background:var(--wa-bg-elevated) !important; border:1px solid var(--wa-border-strong) !important; border-radius:var(--wa-radius-md) !important; box-shadow:0 16px 40px rgba(0,0,0,0.65), 0 0 0 1px rgba(255,255,255,0.06) !important; width:380px !important; max-width:90vw !important; max-height:260px !important; display:none; flex-direction:column !important; overflow:hidden !important; font-family:var(--wa-font) !important; user-select:none !important; animation:waSlideUp 0.15s var(--wa-ease) !important; pointer-events:auto !important; }',
-				'.wa-qr-header { padding:8px 12px !important; background:var(--wa-bg) !important; border-bottom:1px solid var(--wa-border) !important; display:flex !important; align-items:center !important; justify-content:space-between !important; font-size:11px !important; color:var(--wa-text-muted) !important; }',
-				'.wa-qr-badge { font-size:10px !important; padding:2px 6px !important; border-radius:4px !important; background:var(--wa-primary-subtle) !important; color:var(--wa-primary) !important; font-weight:600 !important; }',
-				'.wa-qr-list { overflow-y:auto !important; padding:4px !important; display:flex !important; flex-direction:column !important; gap:2px !important; max-height:210px !important; }',
-				'.wa-qr-item { display:flex !important; flex-direction:column !important; padding:8px 10px !important; border-radius:var(--wa-radius-sm) !important; cursor:pointer !important; transition:all 0.12s ease !important; border:1px solid transparent !important; }',
-				'.wa-qr-item:hover, .wa-qr-item.active { background:var(--wa-bg-hover) !important; border-color:var(--wa-border) !important; }',
-				'.wa-qr-item.active { background:var(--wa-primary-subtle) !important; border-color:rgba(0, 168, 132, 0.35) !important; }',
-				'.wa-qr-item-key { font-size:12.5px !important; font-weight:600 !important; color:var(--wa-primary) !important; display:flex !important; align-items:center !important; gap:6px !important; }',
-				'.wa-qr-item-text { font-size:11.5px !important; color:var(--wa-text-muted) !important; white-space:nowrap !important; overflow:hidden !important; text-overflow:ellipsis !important; margin-top:2px !important; }'
-			].join('\n');
+			style.textContent = WA_ADDON_CSS;
 			var target = document.head || document.documentElement || document.body;
 			if (target) target.appendChild(style);
 		}
@@ -2441,44 +2360,40 @@ func main() {
 			var selectors = [];
 
 			if (privacyConfig.blurContacts) {
-				selectors.push(
-					'body.wa-privacy-active #pane-side [role="listitem"] [title]',
-					'body.wa-privacy-active #pane-side [role="row"] span[dir]',
-					'body.wa-privacy-active #pane-side span[title]'
-				);
-			}
-			if (privacyConfig.blurPreview) {
-				selectors.push(
-					'body.wa-privacy-active #pane-side [role="gridcell"]',
-					'body.wa-privacy-active #pane-side [role="listitem"] div[dir]'
-				);
-			}
-			if (privacyConfig.blurMessages) {
-				selectors.push(
-					'body.wa-privacy-active .message-in',
-					'body.wa-privacy-active .message-out',
-					'body.wa-privacy-active div[data-testid="msg-container"]',
-					'body.wa-privacy-active div[class*="message-in"]',
-					'body.wa-privacy-active div[class*="message-out"]'
-				);
-			}
-			if (privacyConfig.blurMedia) {
-				selectors.push(
-					'body.wa-privacy-active div[data-testid="cell-frame-container"] img',
-					'body.wa-privacy-active div[data-testid="image-thumb"]',
-					'body.wa-privacy-active div[data-testid="media-canvas"]',
-					'body.wa-privacy-active div[data-testid="msg-container"] img',
-					'body.wa-privacy-active div[data-testid="msg-container"] video'
-				);
-			}
-			if (privacyConfig.blurAvatars) {
-				selectors.push(
-					'body.wa-privacy-active #pane-side img',
-					'body.wa-privacy-active header img'
-				);
-			}
+					selectors.push(
+						'body.wa-privacy-active #pane-side [data-testid="cell-frame-title"]',
+						'body.wa-privacy-active #main header [data-testid="conversation-info-header-chat-title-name"]',
+						'body.wa-privacy-active #main [data-testid="author"]'
+					);
+				}
+				if (privacyConfig.blurPreview) {
+					selectors.push(
+						'body.wa-privacy-active #pane-side [data-testid="cell-frame-secondary"]'
+					);
+				}
+				if (privacyConfig.blurMessages) {
+					selectors.push(
+						'body.wa-privacy-active #main [data-testid="msg-container"]',
+						'body.wa-privacy-active #main .message-in',
+						'body.wa-privacy-active #main .message-out'
+					);
+				}
+				if (privacyConfig.blurMedia) {
+					selectors.push(
+						'body.wa-privacy-active #main [data-testid="image-thumb"]',
+						'body.wa-privacy-active #main [data-testid="video-content"]',
+						'body.wa-privacy-active #main [data-testid="msg-container"] img:not(.emoji)',
+						'body.wa-privacy-active #main [data-testid="msg-container"] video'
+					);
+				}
+				if (privacyConfig.blurAvatars) {
+					selectors.push(
+						'body.wa-privacy-active #pane-side [role="row"] img:not(.emoji)',
+						'body.wa-privacy-active #main header img:not(.emoji)'
+					);
+				}
 
-			if (selectors.length === 0) {
+				if (selectors.length === 0) {
 				style.textContent = '';
 				return;
 			}
@@ -2874,21 +2789,83 @@ func main() {
 			sel.addRange(range);
 		}
 
+		// Selects the trailing "/command" the user typed so one insertText replaces it.
+		// WhatsApp's editor (Lexical) reads the selection from beforeinput, so a single
+		// replace is reliable; repeated execCommand('delete') and synthetic input events are not.
+		function selectSlashCommand(editable, slashCmd) {
+			editable.focus();
+			var sel = window.getSelection();
+			var len = slashCmd.length;
+			var node = null, endOffset = 0;
+			if (sel && sel.rangeCount) {
+				var r0 = sel.getRangeAt(0);
+				if (r0.collapsed && r0.startContainer.nodeType === Node.TEXT_NODE && editable.contains(r0.startContainer)) {
+					var before = r0.startContainer.textContent.substring(0, r0.startOffset);
+					if (before.toLowerCase().endsWith(slashCmd.toLowerCase())) {
+						node = r0.startContainer;
+						endOffset = r0.startOffset;
+					}
+				}
+			}
+			if (!node) {
+				var walker = document.createTreeWalker(editable, NodeFilter.SHOW_TEXT);
+				var t;
+				while ((t = walker.nextNode())) {
+					var i = t.textContent.toLowerCase().lastIndexOf(slashCmd.toLowerCase());
+					if (i !== -1) { node = t; endOffset = i + len; }
+				}
+			}
+			if (!node) return false;
+			var range = document.createRange();
+			range.setStart(node, endOffset - len);
+			range.setEnd(node, endOffset);
+			sel.removeAllRanges();
+			sel.addRange(range);
+			return true;
+		}
+
+		// Paste is the one insertion path WhatsApp's editor handles for multi-line text
+		// (insertText drops newlines); fall back to insertText if the paste is not consumed.
+		function insertIntoEditor(editable, text) {
+			editable.focus();
+			var handled = false;
+			try {
+				var dt = new DataTransfer();
+				dt.setData('text/plain', text);
+				var pasteEv = new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true });
+				editable.dispatchEvent(pasteEv);
+				handled = pasteEv.defaultPrevented;
+			} catch (err) {}
+			if (!handled) document.execCommand('insertText', false, text);
+		}
+
+		var waQRLastApply = 0;
+
 		function applyQuickReplyToEditable(editable, matchKey, textToInsert, typedWord) {
 			if (!editable) return false;
-			var userText = getEditorUserText(editable);
-			placeCaretAtEnd(editable);
+			var now = Date.now();
+			if (now - waQRLastApply < 400) return true; // ignore double-fired triggers
+			waQRLastApply = now;
 
+			var userText = getEditorUserText(editable);
 			var m = userText.match(/(?:^|\s)(\/[\w-]*)$/);
 			var slashCmd = m ? m[1] : (typedWord || matchKey);
 
-			var delCount = slashCmd.length;
-			for (var k = 0; k < delCount; k++) {
-				document.execCommand('delete');
+			if (selectSlashCommand(editable, slashCmd)) {
+				// Lexical learns about the new selection from an async selectionchange event,
+				// so inserting immediately would replace the old (collapsed) selection.
+				setTimeout(function() {
+					insertIntoEditor(editable, textToInsert);
+				}, 100);
+			} else {
+				placeCaretAtEnd(editable);
+				setTimeout(function() {
+					for (var k = 0; k < slashCmd.length; k++) {
+						document.execCommand('delete');
+					}
+					insertIntoEditor(editable, textToInsert);
+				}, 100);
 			}
-
-			document.execCommand('insertText', false, textToInsert);
-			editable.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true, inputType: 'insertText', data: textToInsert }));
 			showAddonToast('⚡ Template: ' + matchKey + ' diterapkan');
 			return true;
 		}
@@ -3431,11 +3408,11 @@ func main() {
 					if (target) target.appendChild(style);
 				}
 				style.textContent = [
-					'#pane-side [role="listitem"] [title], #pane-side span[title], header span[dir="auto"], div[role="listitem"] span[dir="auto"] {',
+					'#pane-side [data-testid="cell-frame-title"], #pane-side span[title], #main header [data-testid="conversation-info-header-chat-title-name"], #main [data-testid="author"], header span[dir="auto"] {',
 					'  color: transparent !important;',
 					'  text-shadow: 0 0 10px rgba(255,255,255,0.85) !important;',
 					'}',
-					'#pane-side img, header img, div[role="listitem"] img {',
+					'#pane-side [role="row"] img:not(.emoji), #main header img:not(.emoji) {',
 					'  filter: blur(12px) grayscale(1) !important;',
 					'}',
 					'span[dir="ltr"] {',
@@ -3905,299 +3882,7 @@ func main() {
 				var modal = document.createElement('div');
 				modal.id = 'wa-addon-modal';
 				modal.className = 'wa-modal-backdrop';
-				modal.innerHTML = '<div class="wa-modal-box">' +
-					'    <!-- Top Header -->' +
-					'    <div class="wa-modal-header">' +
-					'      <div class="wa-header-left">' +
-					'        <div class="wa-header-icon">' +
-					'          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>' +
-					'        </div>' +
-					'        <div>' +
-					'          <h3 class="wa-header-title">Pusat Kontrol & Fitur Tambahan</h3>' +
-					'          <p class="wa-header-subtitle">Kustomisasi mode privasi, tampilan, dan alat produktivitas</p>' +
-					'        </div>' +
-					'      </div>' +
-					'      <button id="wa-cc-close" class="wa-close-btn" title="Tutup (Esc)">' +
-					'        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
-					'      </button>' +
-					'    </div>' +
-					'' +
-					'    <!-- Navigation Tabs -->' +
-					'    <div class="wa-tab-bar">' +
-					'      <button class="wa-tab-btn active" data-tab="stealth">' +
-					'        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
-					'        <span>Privasi Layar</span>' +
-					'      </button>' +
-					'      <button class="wa-tab-btn" data-tab="theme">' +
-					'        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 10 10 0 0 0 0-20"/></svg>' +
-					'        <span>Tampilan & Tema</span>' +
-					'      </button>' +
-					'      <button class="wa-tab-btn" data-tab="productivity">' +
-					'        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-					'        <span>Alat & Percakapan</span>' +
-					'      </button>' +
-					'      <button class="wa-tab-btn" data-tab="system">' +
-					'        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
-					'        <span>Sistem & Keamanan</span>' +
-					'      </button>' +
-					'    </div>' +
-					'' +
-					'    <!-- Tab Contents Container -->' +
-					'    <div class="wa-modal-body">' +
-					'' +
-					'      <!-- TAB 1: PRIVASI LAYAR -->' +
-					'      <div id="wa-tab-content-stealth" class="wa-tab-pane" style="display:flex;flex-direction:column;gap:14px;">' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div>' +
-					'              <div class="wa-card-title">' +
-					'                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>' +
-					'                <span>Mode Privasi (Blur Layar - Alt + P)</span>' +
-					'              </div>' +
-					'              <div class="wa-row-desc" style="margin-top:2px;">Buramkan obrolan agar aman dari pandangan rekan di sekitar (Bisa diintip saat hover kursor)</div>' +
-					'            </div>' +
-					'            <button id="wa-cc-privacy-btn" class="wa-btn wa-btn-secondary" style="font-size:11.5px;padding:5px 12px;">Toggle Privasi</button>' +
-					'          </div>' +
-					'          <div style="font-size:11.5px;color:var(--wa-text-dim);background:rgba(255,255,255,0.03);padding:6px 10px;border-radius:var(--wa-radius-sm);border:1px solid var(--wa-border);">' +
-					'            💡 <b>Hover to Peek:</b> Dekatkan kursor mouse ke pesan/kontak yang diburamkan untuk melihat isinya sementara.' +
-					'          </div>' +
-					'          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:12.5px;color:var(--wa-text);margin-top:2px;">' +
-					'            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="wa-cc-blur-contacts"> Nama Kontak</label>' +
-					'            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="wa-cc-blur-preview"> Preview Pesan</label>' +
-					'            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="wa-cc-blur-messages"> Balon Obrolan</label>' +
-					'            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="wa-cc-blur-media"> Foto & Video</label>' +
-					'            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="wa-cc-blur-avatars"> Foto Profil</label>' +
-					'          </div>' +
-					'          <div class="wa-row" style="margin-top:4px;">' +
-					'            <span style="font-size:12px;color:var(--wa-text-muted);">Intensitas Efek Blur:</span>' +
-					'            <div class="wa-segmented">' +
-					'              <button id="wa-blur-btn-3" class="wa-segmented-btn">Halus (3px)</button>' +
-					'              <button id="wa-blur-btn-5" class="wa-segmented-btn">Sedang (5px)</button>' +
-					'              <button id="wa-blur-btn-8" class="wa-segmented-btn">Kuat (8px)</button>' +
-					'            </div>' +
-					'          </div>' +
-					'        </div>' +
-					'' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div>' +
-					'              <div class="wa-card-title">' +
-					'                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' +
-					'                <span>Mode Screenshot Anonim</span>' +
-					'              </div>' +
-					'              <div class="wa-row-desc" style="margin-top:2px;">Samarkan nama dan nomor kontak sebelum mengambil tangkapan layar chat</div>' +
-					'            </div>' +
-					'            <button id="wa-cc-anon-btn" class="wa-btn wa-btn-secondary" style="font-size:11.5px;padding:5px 12px;">Aktifkan</button>' +
-					'          </div>' +
-					'        </div>' +
-					'' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div>' +
-					'              <div class="wa-card-title">' +
-					'                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' +
-					'                <span>Filter Chat Belum Dibaca</span>' +
-					'              </div>' +
-					'              <div class="wa-row-desc" style="margin-top:2px;">Hanya tampilkan obrolan yang belum dibaca di panel samping</div>' +
-					'            </div>' +
-					'            <button id="wa-cc-unread-toggle" class="wa-btn wa-btn-secondary" style="font-size:11.5px;padding:5px 12px;">Aktifkan Filter</button>' +
-					'          </div>' +
-					'        </div>' +
-					'' +
-					'        <div class="wa-card" style="border-left:3px solid var(--wa-primary);">' +
-					'          <div style="display:flex;align-items:flex-start;gap:10px;">' +
-					'            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--wa-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
-					'            <div>' +
-					'              <div style="font-size:12px;font-weight:600;color:var(--wa-text);">Privasi Layar 100% Aman & Anti-Banned</div>' +
-					'              <div class="wa-row-desc" style="margin-top:2px;line-height:1.45;">Aplikasi ini tidak memodifikasi transmisi enkripsi end-to-end (Noise Protocol) WhatsApp resmi sehingga akun Anda dijamin 100% aman dan tidak berisiko diblokir oleh Meta.</div>' +
-					'            </div>' +
-					'          </div>' +
-					'        </div>' +
-					'      </div>' +
-					'' +
-					'      <!-- TAB 2: TAMPILAN & TEMA -->' +
-					'      <div id="wa-tab-content-theme" class="wa-tab-pane" style="display:none;flex-direction:column;gap:14px;">' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div class="wa-card-title">' +
-					'              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 10 10 0 0 0 0-20"/></svg>' +
-					'              <span>Tema & Kenyamanan Visual</span>' +
-					'            </div>' +
-					'          </div>' +
-					'          <div class="wa-theme-grid">' +
-					'            <div id="wa-theme-default" class="wa-theme-card active">' +
-					'              <div class="wa-theme-swatch" style="background:#111b21;"></div>' +
-					'              <span>Standar Gelap</span>' +
-					'            </div>' +
-					'            <div id="wa-theme-oled" class="wa-theme-card">' +
-					'              <div class="wa-theme-swatch" style="background:#000000;"></div>' +
-					'              <span>OLED Black</span>' +
-					'            </div>' +
-					'            <div id="wa-theme-warm" class="wa-theme-card">' +
-					'              <div class="wa-theme-swatch" style="background:#1a1e21;border-color:rgba(217,119,6,0.3);"></div>' +
-					'              <span>Layar Hangat</span>' +
-					'            </div>' +
-					'          </div>' +
-					'          <div class="wa-row">' +
-					'            <div>' +
-					'              <div class="wa-row-title">Daftar Chat Rapat (Compact Mode)</div>' +
-					'              <div class="wa-row-desc">Memadatkan baris daftar obrolan agar memuat lebih banyak kontak</div>' +
-					'            </div>' +
-					'            <label class="wa-switch"><input type="checkbox" id="wa-compact-cb"><span class="wa-slider"></span></label>' +
-					'          </div>' +
-					'        </div>' +
-					'' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div class="wa-card-title">' +
-					'              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>' +
-					'              <span>Skala Tampilan & Kecepatan Suara</span>' +
-					'            </div>' +
-					'          </div>' +
-					'          <div class="wa-row">' +
-					'            <div>' +
-					'              <div class="wa-row-title">Zoom Antarmuka</div>' +
-					'              <div class="wa-row-desc">Shortcut: Ctrl + / Ctrl - / Ctrl 0</div>' +
-					'            </div>' +
-					'            <div class="wa-segmented">' +
-					'              <button id="wa-cc-zoom-out" class="wa-segmented-btn" title="Perkecil">−</button>' +
-					'              <button id="wa-cc-zoom-reset" class="wa-segmented-btn" title="Reset (100%)">Reset</button>' +
-					'              <button id="wa-cc-zoom-in" class="wa-segmented-btn" title="Perbesar">+</button>' +
-					'            </div>' +
-					'          </div>' +
-					'          <div class="wa-row">' +
-					'            <div>' +
-					'              <div class="wa-row-title">Kecepatan Default Voice Note</div>' +
-					'              <div class="wa-row-desc">Atur laju pemutaran rekaman suara WhatsApp</div>' +
-					'            </div>' +
-					'            <div style="display:flex;gap:4px;">' +
-					'              <button class="wa-audio-btn wa-btn wa-btn-secondary" data-spd="1.0" style="padding:4px 8px;font-size:11px;">1.0x</button>' +
-					'              <button class="wa-audio-btn wa-btn wa-btn-secondary" data-spd="1.25" style="padding:4px 8px;font-size:11px;">1.25x</button>' +
-					'              <button class="wa-audio-btn wa-btn wa-btn-secondary" data-spd="1.5" style="padding:4px 8px;font-size:11px;">1.5x</button>' +
-					'              <button class="wa-audio-btn wa-btn wa-btn-secondary" data-spd="2.0" style="padding:4px 8px;font-size:11px;">2.0x</button>' +
-					'            </div>' +
-					'          </div>' +
-					'        </div>' +
-					'      </div>' +
-					'' +
-					'      <!-- TAB 3: ALAT & CHAT -->' +
-					'      <div id="wa-tab-content-productivity" class="wa-tab-pane" style="display:none;flex-direction:column;gap:14px;">' +
-					'        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-					'          <div class="wa-card" style="justify-content:space-between;">' +
-					'            <div>' +
-					'              <div class="wa-row-title" style="display:flex;align-items:center;gap:6px;">' +
-					'                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
-					'                <span>Catatan Tempel</span>' +
-					'              </div>' +
-					'              <div class="wa-row-desc" style="margin-top:4px;">Panel memo samping dengan autosave otomatis (Alt + N)</div>' +
-					'            </div>' +
-					'            <button id="wa-cc-scratchpad-btn" class="wa-btn wa-btn-secondary" style="margin-top:10px;width:100%;">Buka Catatan</button>' +
-					'          </div>' +
-					'          <div class="wa-card" style="justify-content:space-between;">' +
-					'            <div>' +
-					'              <div class="wa-row-title" style="display:flex;align-items:center;gap:6px;">' +
-					'                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' +
-					'                <span>Screenshot Anonim</span>' +
-					'              </div>' +
-					'              <div class="wa-row-desc" style="margin-top:4px;">Samarkan nama dan avatar sebelum mengambil tangkapan layar</div>' +
-					'            </div>' +
-					'            <button id="wa-cc-anon-btn" class="wa-btn wa-btn-secondary" style="margin-top:10px;width:100%;">Aktifkan Mode</button>' +
-					'          </div>' +
-					'        </div>' +
-					'' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div class="wa-card-title">' +
-					'              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>' +
-					'              <span>Chat ke Nomor Baru (Ctrl + N)</span>' +
-					'            </div>' +
-					'          </div>' +
-					'          <div style="display:flex;gap:8px;">' +
-					'            <input id="wa-cc-phone" class="wa-input" type="text" placeholder="Contoh: 08123456789 atau 628..." style="flex:1;">' +
-					'            <button id="wa-cc-phone-btn" class="wa-btn wa-btn-primary">Buka Chat</button>' +
-					'          </div>' +
-					'        </div>' +
-					'' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div>' +
-					'              <div class="wa-card-title">' +
-					'                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>' +
-					'                <span>Template Balasan Cepat (Quick Replies)</span>' +
-					'              </div>' +
-					'              <div class="wa-row-desc" style="margin-top:2px;">Ketik /shortcut lalu tekan Tab, Enter, Spasi, atau klik popup otomatis</div>' +
-					'            </div>' +
-					'          </div>' +
-					'          <div id="wa-qr-list" style="max-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>' +
-					'          <div style="display:flex;gap:6px;border-top:1px solid var(--wa-border);padding-top:10px;">' +
-					'            <input id="wa-qr-new-key" class="wa-input" type="text" placeholder="/shortcut" style="width:110px;">' +
-					'            <input id="wa-qr-new-text" class="wa-input" type="text" placeholder="Teks balasan otomatis..." style="flex:1;">' +
-					'            <button id="wa-qr-add-btn" class="wa-btn wa-btn-primary">+ Tambah</button>' +
-					'          </div>' +
-					'        </div>' +
-					'      </div>' +
-					'' +
-					'      <!-- TAB 4: SISTEM & KEAMANAN -->' +
-					'      <div id="wa-tab-content-system" class="wa-tab-pane" style="display:none;flex-direction:column;gap:14px;">' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div>' +
-					'              <div class="wa-card-title">' +
-					'                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
-					'                <span>Kunci Aplikasi (Ctrl + L)</span>' +
-					'              </div>' +
-					'              <div class="wa-row-desc" style="margin-top:2px;">Kunci otomatis setelah 5 menit tidak aktif. PIN default: 1234</div>' +
-					'            </div>' +
-					'          </div>' +
-					'          <div style="display:flex;gap:10px;">' +
-					'            <button id="wa-cc-lock-btn" class="wa-btn wa-btn-secondary" style="flex:1;">Kunci Sekarang</button>' +
-					'            <button id="wa-cc-changepin-btn" class="wa-btn wa-btn-primary" style="flex:1;">Ubah / Ganti PIN</button>' +
-					'          </div>' +
-					'        </div>' +
-					'' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div>' +
-					'              <div class="wa-card-title">' +
-					'                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>' +
-					'                <span>Multi-Messenger & Mode Berdampingan</span>' +
-					'              </div>' +
-					'              <div class="wa-row-desc" style="margin-top:2px;">Jalankan dua akun WhatsApp atau buka WhatsApp & Telegram berdampingan 50:50</div>' +
-					'            </div>' +
-					'          </div>' +
-					'          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">' +
-					'            <button id="wa-cc-dual-acc-btn" class="wa-btn wa-btn-secondary">Buka Akun WhatsApp Ke-2</button>' +
-					'            <button id="wa-cc-filter-unread-btn" class="wa-btn wa-btn-secondary">Filter Belum Dibaca</button>' +
-					'            <button id="wa-cc-tg-btn" class="wa-btn wa-btn-tg">Buka Telegram Web (Ctrl+2)</button>' +
-					'            <button id="wa-cc-split-btn" class="wa-btn wa-btn-secondary" style="border-color:rgba(36,161,222,0.4);color:var(--wa-tg);">Berdampingan 50:50 (Ctrl+3)</button>' +
-					'          </div>' +
-					'        </div>' +
-					'' +
-					'        <div class="wa-card">' +
-					'          <div class="wa-card-header">' +
-					'            <div class="wa-card-title">' +
-					'              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' +
-					'              <span>Startup & Pemeliharaan</span>' +
-					'            </div>' +
-					'          </div>' +
-					'          <div class="wa-row">' +
-					'            <div>' +
-					'              <div class="wa-row-title">Mulai Otomatis saat Boot Windows</div>' +
-					'              <div class="wa-row-desc">Aplikasi otomatis berjalan di System Tray saat komputer dinyalakan</div>' +
-					'            </div>' +
-					'            <label class="wa-switch"><input type="checkbox" id="wa-cc-autostart-cb"><span class="wa-slider"></span></label>' +
-					'          </div>' +
-					'          <div style="font-size:11.5px;color:var(--wa-text-muted);background:var(--wa-bg);padding:10px 14px;border-radius:var(--wa-radius-sm);border:1px solid var(--wa-border);line-height:1.4;">' +
-					'            Pintasan Boss Key Global: Tekan <b style="color:var(--wa-text);">Ctrl + Alt + W</b> kapan saja untuk menyembunyikan atau memunculkan jendela seketika.' +
-					'          </div>' +
-					'          <div style="display:flex;gap:10px;border-top:1px solid var(--wa-border);padding-top:12px;">' +
-					'            <button id="wa-cc-reload-btn" class="wa-btn wa-btn-secondary" style="flex:1;">Muat Ulang Halaman</button>' +
-					'            <button id="wa-cc-logout-btn" class="wa-btn wa-btn-danger" style="flex:1;">Reset Sesi Login</button>' +
-					'          </div>' +
-					'        </div>' +
-					'      </div>' +
-					'    </div>' +
-					'  </div>';
+				modal.innerHTML = WA_CC_HTML;
 
 				document.body.appendChild(modal);
 
@@ -4510,6 +4195,7 @@ func main() {
 				}
 
 				modal._syncUI = syncPrivacyUI;
+					if (window.waBindCoreUI) window.waBindCoreUI(modal);
 				return modal;
 			}
 
@@ -4634,11 +4320,9 @@ func main() {
 
 				// Try injecting into WhatsApp vertical icon navigation rail
 				if (!document.getElementById('wa-addon-rail-btn')) {
-					var navContainers = document.querySelectorAll('header, nav, [role="navigation"], [aria-label*="Navigation"], [aria-label*="navigation"]');
-					for (var i = 0; i < navContainers.length; i++) {
-						var container = navContainers[i];
-						var buttons = container.querySelectorAll('[role="button"], button');
-						if (buttons.length >= 3) {
+					var container = window.waSel ? window.waSel.one('navRail') : null;
+					for (var i = 0; i < 1; i++) {
+						if (container) {
 							var railBtn = document.createElement('button');
 							railBtn.id = 'wa-addon-rail-btn';
 							railBtn.title = 'Pusat Kontrol (Alt+M)';
@@ -4667,7 +4351,7 @@ func main() {
 		})();
 	`
 
-	w.Init(initScript)
+	w.Init(initScript + "\n" + addonCoreJS)
 
 	// Initialize Telegram child webview before navigation begins
 	initTelegramChild()
