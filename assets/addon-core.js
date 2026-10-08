@@ -255,17 +255,52 @@
 		});
 	}
 
+	// Per-chat blur: chats listed here stay blurred (hover to peek) without needing Privacy Mode.
+	var blurState = { names: loadJSON('wa_blur_chats', []) };
+	var EYE_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+	function isBlurred(name) { return blurState.names.indexOf(name) !== -1; }
+	function saveBlur() { saveJSON('wa_blur_chats', blurState.names); }
+
+	function ensureRowButton(row, cls, html) {
+		var btn = row.querySelector(':scope > .' + cls);
+		if (btn) return btn;
+		btn = document.createElement('button');
+		btn.className = 'wa-pin-toggle ' + cls;
+		btn.innerHTML = html;
+		row.appendChild(btn);
+		return btn;
+	}
+
 	function decorateRows() {
 		var rows = all('chatRows');
 		rows.forEach(function (row) {
 			var name = rowName(row);
 			if (!name) return;
-			var btn = row.querySelector(':scope > .wa-pin-toggle');
+			if (getComputedStyle(row).position === 'static') row.style.position = 'relative';
+			row.classList.add('wa-pin-host');
+
+			// Blur toggle (always available)
+			var eye = ensureRowButton(row, 'wa-blur-toggle', EYE_SVG);
+			if (!eye._wired) {
+				eye._wired = true;
+				eye.addEventListener('click', function (e) {
+					e.preventDefault(); e.stopPropagation();
+					var n = eye._name;
+					if (isBlurred(n)) { blurState.names = blurState.names.filter(function (x) { return x !== n; }); toast('Blur dilepas: ' + n); }
+					else { blurState.names.push(n); toast('Chat diburamkan: ' + n); }
+					saveBlur(); refreshPins();
+				}, true);
+			}
+			eye._name = name;
+			eye.title = isBlurred(name) ? 'Lepas blur chat ini' : 'Selalu buramkan chat ini';
+			eye.classList.toggle('on', isBlurred(name));
+			row.setAttribute('data-wa-blur', isBlurred(name) ? '1' : '0');
+
+			// Pin toggle
+			var btn = row.querySelector(':scope > .wa-pin-btn');
 			if (!pinState.enabled) { if (btn) btn.remove(); return; }
 			if (!btn) {
-				btn = document.createElement('button');
-				btn.className = 'wa-pin-toggle';
-				btn.innerHTML = PIN_SVG;
+				btn = ensureRowButton(row, 'wa-pin-btn', PIN_SVG);
 				btn.addEventListener('click', function (e) {
 					e.preventDefault(); e.stopPropagation();
 					var n = btn._name;
@@ -273,13 +308,35 @@
 					else { pinState.names.push(n); toast('Dipin: ' + n); }
 					savePins(); refreshPins();
 				}, true);
-				if (getComputedStyle(row).position === 'static') row.style.position = 'relative';
-				row.appendChild(btn);
 			}
 			btn._name = name;
 			btn.title = isPinned(name) ? 'Lepas pin' : 'Pin chat ini';
 			btn.classList.toggle('pinned', isPinned(name));
-			row.classList.add('wa-pin-host');
+		});
+	}
+
+	function openChatName() {
+		var h = one('chatHeader');
+		var t = h && one('headerTitle', h);
+		return t ? (t.getAttribute('title') || t.textContent || '').trim() : '';
+	}
+
+	function renderBlurList() {
+		var list = document.getElementById('wa-blurchat-list');
+		var c = document.getElementById('wa-blurchat-count');
+		if (c) c.textContent = String(blurState.names.length);
+		if (!list) return;
+		list.innerHTML = '';
+		blurState.names.forEach(function (name) {
+			var row = document.createElement('div');
+			row.className = 'wa-row';
+			row.innerHTML = '<div class="wa-row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div><button class="wa-btn wa-btn-secondary wa-btn-sm">Lepas</button>';
+			row.firstChild.textContent = name;
+			row.lastChild.onclick = function () {
+				blurState.names = blurState.names.filter(function (x) { return x !== name; });
+				saveBlur(); refreshPins();
+			};
+			list.appendChild(row);
 		});
 	}
 
@@ -402,6 +459,73 @@
 	};
 
 	// ------------------------------------------------------------------
+	// 4c. Quick reply variables, lock-on-hide, chat export
+	// ------------------------------------------------------------------
+	window.waExpandVars = function (text) {
+		var name = openChatName();
+		var d = new Date();
+		var map = {
+			nama: name,
+			depan: name ? name.split(/\s+/)[0] : '',
+			tanggal: d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
+			hari: d.toLocaleDateString('id-ID', { weekday: 'long' }),
+			jam: d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':')
+		};
+		return String(text).replace(/\{(nama|depan|tanggal|hari|jam)\}/gi, function (m, k) {
+			var v = map[k.toLowerCase()];
+			return v ? v : m;
+		});
+	};
+
+	// Called from Go when the window is hidden to the tray or via the Boss Key.
+	window.waOnHidden = function () {
+		if (loadJSON('wa_lock_on_hide', false) && typeof window.lockWhatsApp === 'function') window.lockWhatsApp();
+	};
+
+	// Builds a plain-text transcript of the messages currently rendered in the open chat.
+	window.waBuildChatExport = function () {
+		var rows = qAll('#main [data-id][data-testid^="conv-msg-"]');
+		if (!rows.length) rows = all('messages');
+		var lines = [];
+		rows.forEach(function (row) {
+			var pre = row.querySelector('[data-pre-plain-text]');
+			var head = pre ? pre.getAttribute('data-pre-plain-text').trim() : '';
+			var parts = qAll('[data-testid$="selectable-text"], .selectable-text.copyable-text', row).filter(function (el) {
+				return !el.closest('[data-testid="quoted-message"]');
+			});
+			// Keep only outermost matches so nested spans are not counted twice.
+			parts = parts.filter(function (el) { return !parts.some(function (o) { return o !== el && o.contains(el); }); });
+			var body = parts.map(function (el) { return (el.innerText || '').trim(); }).filter(Boolean).join('\n');
+			if (!body) {
+				if (row.querySelector('[data-testid="image-thumb"]')) body = '<gambar>';
+				else if (row.querySelector('[data-testid="video-content"], video')) body = '<video>';
+				else if (row.querySelector('audio, [data-icon="audio-play"], [data-testid="audio-play"]')) body = '<pesan suara>';
+				else body = '<lampiran / stiker>';
+			}
+			lines.push((head ? head + ' ' : '') + body);
+		});
+		return lines;
+	};
+
+	window.waExportChat = function () {
+		var lines = window.waBuildChatExport();
+		if (!lines.length) { toast('Buka sebuah chat dulu'); return 0; }
+		var title = openChatName() || 'chat';
+		var text = 'Ekspor chat WhatsApp: ' + title + '\r\n' + 'Diekspor: ' + new Date().toLocaleString('id-ID') + '\r\n' +
+			'Hanya pesan yang termuat di layar (' + lines.length + ' pesan)\r\n\r\n' + lines.join('\r\n') + '\r\n';
+		var blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
+		var url = URL.createObjectURL(blob);
+		var a = document.createElement('a');
+		a.href = url;
+		a.download = ('WhatsApp - ' + title).replace(/[\\/:*?"<>|]/g, '_').slice(0, 80) + '.txt';
+		document.body.appendChild(a);
+		a.click();
+		setTimeout(function () { a.remove(); URL.revokeObjectURL(url); }, 2000);
+		toast('Mengekspor ' + lines.length + ' pesan');
+		return lines.length;
+	};
+
+	// ------------------------------------------------------------------
 	// 5. Control Center wiring (called from main.go after the modal exists)
 	// ------------------------------------------------------------------
 	window.waBindCoreUI = function (modal) {
@@ -409,6 +533,8 @@
 		var radarCb = modal.querySelector('#wa-cc-radar-cb');
 		var radarNames = modal.querySelector('#wa-cc-radar-names');
 		var diagBtn = modal.querySelector('#wa-diag-run');
+		var exportBtn = modal.querySelector('#wa-cc-export-btn');
+		var lockHideCb = modal.querySelector('#wa-cc-lock-hide-cb');
 
 		if (pinCb) pinCb.onchange = function () {
 			pinState.enabled = pinCb.checked; savePins(); refreshPins();
@@ -420,6 +546,11 @@
 		};
 		if (radarNames) radarNames.onchange = function () { radar.names = radarNames.value; saveJSON('wa_radar_config', radar); };
 		if (diagBtn) diagBtn.onclick = function () { renderDiagnostics(modal); };
+		if (exportBtn) exportBtn.onclick = function () { window.waExportChat(); };
+		if (lockHideCb) lockHideCb.onchange = function () {
+			saveJSON('wa_lock_on_hide', lockHideCb.checked);
+			toast(lockHideCb.checked ? 'Kunci saat disembunyikan: aktif' : 'Kunci saat disembunyikan: nonaktif');
+		};
 
 		var prevSync = modal._syncUI;
 		modal._syncUI = function () {
@@ -437,6 +568,7 @@
 			if (pinCb) pinCb.checked = !!pinState.enabled;
 			if (radarCb) radarCb.checked = !!radar.enabled;
 			if (radarNames) radarNames.value = radar.names || '';
+			if (lockHideCb) lockHideCb.checked = !!loadJSON('wa_lock_on_hide', false);
 			refreshPins();
 		};
 	};

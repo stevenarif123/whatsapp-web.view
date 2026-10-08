@@ -179,6 +179,13 @@ textarea.wa-input { height: auto; padding: 8px 11px; resize: vertical; min-heigh
 .wa-dock-sep { width: 1px; height: 14px; background: var(--wa-border); margin: 0 1px; }
 .wa-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--wa-primary); display: inline-block; }
 
+/* In narrow windows (e.g. snapped to half the screen) shrink the dock to icons so it stays inside
+   the chat-list column instead of covering the message composer. */
+@media (max-width: 1150px) {
+  .wa-dock-item { padding: 6px 9px; }
+  .wa-dock-item > span:not(.wa-status-dot) { display: none; }
+}
+
 /* Hide the floating dock while the control center is open so it never overlaps. */
 body:has(#wa-addon-modal[style*="flex"]) .wa-dock { visibility: hidden !important; }
 
@@ -212,3 +219,32 @@ body:has(#wa-addon-modal[style*="flex"]) .wa-dock { visibility: hidden !importan
 .wa-pin-toggle:hover { color: var(--wa-primary-text); border-color: var(--wa-primary); }
 .wa-pin-toggle.pinned { color: var(--wa-primary-text); border-color: var(--wa-primary); }
 .wa-pin-host:hover > .wa-pin-toggle, .wa-pin-host > .wa-pin-toggle.pinned { display: flex; }
+
+/* ---------- Notes drawer ---------- */
+.wa-note-tools { display: flex; gap: 8px; padding: 12px 18px 8px; }
+.wa-note-list { max-height: 34%; min-height: 56px; overflow-y: auto; margin: 0 18px; border: 1px solid var(--wa-border); border-radius: var(--wa-radius-sm); background: var(--wa-surface); flex-shrink: 0; }
+.wa-note-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 12px; cursor: pointer; border-left: 3px solid transparent; transition: background 0.12s ease; }
+.wa-note-item + .wa-note-item { border-top: 1px solid var(--wa-border); }
+.wa-note-item:hover { background: rgba(255, 255, 255, 0.04); }
+.wa-note-item.active { background: var(--wa-primary-subtle); border-left-color: var(--wa-primary); }
+.wa-note-title { font-size: 12.5px; color: var(--wa-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wa-note-date { font-size: 10.5px; color: var(--wa-text-dim); flex-shrink: 0; }
+
+/* ---------- Always-blurred chats (per chat) ---------- */
+#pane-side [data-wa-blur="1"] [data-testid="cell-frame-title"],
+#pane-side [data-wa-blur="1"] [data-testid="cell-frame-secondary"],
+#pane-side [data-wa-blur="1"] img:not(.emoji),
+body[data-wa-open-blur="1"] #main [data-testid="msg-container"],
+body[data-wa-open-blur="1"] #main [data-testid="conversation-info-header-chat-title-name"],
+body[data-wa-open-blur="1"] #main header img:not(.emoji),
+body[data-wa-open-blur="1"] #main [data-testid="image-thumb"] { filter: blur(6px); transition: filter 0.15s ease-in-out; }
+#pane-side [data-wa-blur="1"]:hover [data-testid="cell-frame-title"],
+#pane-side [data-wa-blur="1"]:hover [data-testid="cell-frame-secondary"],
+#pane-side [data-wa-blur="1"]:hover img:not(.emoji),
+body[data-wa-open-blur="1"] #main [data-testid="msg-container"]:hover,
+body[data-wa-open-blur="1"] #main header:hover [data-testid="conversation-info-header-chat-title-name"],
+body[data-wa-open-blur="1"] #main header:hover img:not(.emoji),
+body[data-wa-open-blur="1"] #main [data-testid="image-thumb"]:hover { filter: none; }
+.wa-blur-toggle { right: 34px; }
+.wa-pin-host:hover > .wa-blur-toggle, .wa-pin-host > .wa-blur-toggle.on { display: flex; }
+.wa-blur-toggle.on { color: var(--wa-primary-text); border-color: var(--wa-primary); }

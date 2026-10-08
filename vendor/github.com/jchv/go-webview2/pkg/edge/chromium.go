@@ -17,6 +17,7 @@ import (
 )
 
 type Chromium struct {
+	boundsOverride        *w32.Rect
 	hwnd                  uintptr
 	focusOnInit           bool
 	controller            *ICoreWebView2Controller
@@ -383,4 +384,27 @@ func (e *Chromium) Focus() {
 		return
 	}
 	_ = e.controller.MoveFocus(COREWEBVIEW2_MOVE_FOCUS_REASON_PROGRAMMATIC)
+}
+
+// SetBoundsOverride makes the WebView2 viewport use r (parent client coordinates) instead of the
+// whole client area. Used to show the web content in only part of the window.
+func (e *Chromium) SetBoundsOverride(left, top, right, bottom int32) {
+	e.boundsOverride = &w32.Rect{Left: left, Top: top, Right: right, Bottom: bottom}
+	e.Resize()
+}
+
+// ClearBoundsOverride goes back to filling the parent's client area.
+func (e *Chromium) ClearBoundsOverride() {
+	e.boundsOverride = nil
+	e.Resize()
+}
+
+// currentBounds returns the override if set, else the parent's client rectangle.
+func (e *Chromium) currentBounds() w32.Rect {
+	if e.boundsOverride != nil {
+		return *e.boundsOverride
+	}
+	var bounds w32.Rect
+	_, _, _ = w32.User32GetClientRect.Call(e.hwnd, uintptr(unsafe.Pointer(&bounds)))
+	return bounds
 }

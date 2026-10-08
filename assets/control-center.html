@@ -92,6 +92,19 @@
         </div>
       </div>
 
+      <div class="wa-section">
+        <div class="wa-section-label">Chat yang selalu diburamkan</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Blur per chat <span id="wa-blurchat-count" class="wa-tag" style="margin-left:6px;">0</span></div>
+              <div class="wa-row-desc">Arahkan kursor ke sebuah chat lalu klik ikon mata. Chat itu selalu buram, tanpa perlu Mode Privasi.</div>
+            </div>
+          </div>
+          <div id="wa-blurchat-list"></div>
+        </div>
+      </div>
+
       <div class="wa-callout">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
         <div><b>Aman untuk akun Anda.</b> Semua fitur di sini hanya mengubah tampilan di layar ini. Tidak ada yang memodifikasi koneksi atau enkripsi WhatsApp.</div>
@@ -224,6 +237,13 @@
             </div>
             <button id="wa-cc-scratchpad-btn" class="wa-btn wa-btn-secondary">Buka Catatan</button>
           </div>
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Ekspor chat terbuka</div>
+              <div class="wa-row-desc">Simpan pesan yang sudah termuat di layar sebagai berkas .txt. Gulir ke atas dulu untuk memuat pesan lama.</div>
+            </div>
+            <button id="wa-cc-export-btn" class="wa-btn wa-btn-secondary">Ekspor .txt</button>
+          </div>
           <div class="wa-row wa-row-stack">
             <div class="wa-row-text">
               <div class="wa-row-title">Chat ke nomor baru</div>
@@ -241,7 +261,7 @@
         <div class="wa-section-label">Balasan cepat</div>
         <div class="wa-group">
           <div class="wa-row wa-row-stack" style="padding-bottom:6px;">
-            <div class="wa-row-desc" style="margin:0;">Ketik <b>/pintasan</b> di chat, lalu tekan Tab, Enter, atau Spasi untuk memunculkan teks lengkap.</div>
+            <div class="wa-row-desc" style="margin:0;">Ketik <b>/pintasan</b> di chat, lalu tekan Tab, Enter, atau Spasi untuk memunculkan teks lengkap. Variabel yang bisa dipakai di teks: <b>{nama}</b> (nama chat), <b>{depan}</b> (nama depan), <b>{tanggal}</b>, <b>{hari}</b>, <b>{jam}</b>.</div>
           </div>
           <div id="wa-qr-list"></div>
           <div class="wa-row">
@@ -265,6 +285,13 @@
       <div class="wa-section">
         <div class="wa-section-label">Kunci aplikasi</div>
         <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Kunci saat disembunyikan</div>
+              <div class="wa-row-desc">Kunci otomatis ketika jendela disembunyikan ke tray atau lewat Boss Key.</div>
+            </div>
+            <label class="wa-switch"><input type="checkbox" id="wa-cc-lock-hide-cb"><span class="wa-slider"></span></label>
+          </div>
           <div class="wa-row">
             <div class="wa-row-text">
               <div class="wa-row-title">Kunci dengan PIN</div>

@@ -81,4 +81,9 @@ type WebView interface {
 	// f must be a function
 	// f must return either value and error or just error
 	Bind(name string, f interface{}) error
+
+	// SetContentBounds restricts the web content to a rectangle of the client area;
+	// ClearContentBounds restores full-window content.
+	SetContentBounds(left, top, right, bottom int32)
+	ClearContentBounds()
 }

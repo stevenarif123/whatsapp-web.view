@@ -38,6 +38,8 @@ func setWindowContext(wnd uintptr, data interface{}) {
 type browser interface {
 	Embed(hwnd uintptr) bool
 	Resize()
+	SetBoundsOverride(left, top, right, bottom int32)
+	ClearBoundsOverride()
 	Navigate(url string)
 	NavigateToString(htmlContent string)
 	Init(script string)
@@ -488,4 +490,14 @@ func (w *webview) Bind(name string, f interface{}) error {
 	})()`)
 
 	return nil
+}
+
+// SetContentBounds shows the web content only in the given rectangle of the window's client area.
+func (w *webview) SetContentBounds(left, top, right, bottom int32) {
+	w.browser.SetBoundsOverride(left, top, right, bottom)
+}
+
+// ClearContentBounds makes the web content fill the whole client area again.
+func (w *webview) ClearContentBounds() {
+	w.browser.ClearBoundsOverride()
 }
