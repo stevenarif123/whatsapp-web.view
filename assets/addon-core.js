@@ -415,10 +415,10 @@
 
 	// ------------------------------------------------------------------
 	// 4a. Compact layout for narrow windows. WhatsApp Web's main container has min-width: 748px, so in a
-	//     narrower window the chat pane is cut off and the page scrolls sideways. Below that width we show
+	//     narrower window the chat pane is cut off and the page scrolls sideways. Below NARROW_PX we show
 	//     one pane at a time (chat list, or the open chat with a back button), like the native app.
 	// ------------------------------------------------------------------
-	var NARROW_PX = 760;
+	var NARROW_PX = 900;
 	var compactEnabled = loadJSON('wa_compact_narrow', true);
 
 	function markLayout() {
