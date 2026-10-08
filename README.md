@@ -17,24 +17,28 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 
 ### Chat & Alat
 - **Pin chat tanpa batas**: arahkan kursor ke chat lalu klik ikon pin. Chat yang dipin muncul sebagai chip di atas daftar chat. Pin hanya tersimpan di komputer ini dan tidak mengubah pin bawaan WhatsApp.
-- **Filter chat belum dibaca**.
+- **Blur per chat**: klik ikon mata di baris chat agar chat itu selalu buram (arahkan kursor untuk mengintip), tanpa menyalakan Mode Privasi untuk semuanya.
+- **Filter chat belum dibaca**: memakai chip "Belum dibaca" bawaan WhatsApp.
 - **Radar online**: toast dan notifikasi Windows saat kontak di chat yang sedang terbuka menjadi online atau mulai mengetik. Bisa dibatasi ke nama tertentu. *Catatan: WhatsApp hanya mengirim status online untuk chat yang sedang Anda buka, dan hanya jika kontak mengizinkannya.*
-- **Balasan cepat**: buat pintasan seperti `/toko`, ketik di chat, lalu tekan Tab, Enter, atau Spasi untuk mengembangkannya.
+- **Balasan cepat**: buat pintasan seperti `/toko`, ketik di chat, lalu tekan Tab, Enter, atau Spasi untuk mengembangkannya. Teks bisa memakai variabel `{nama}` (nama chat), `{depan}`, `{tanggal}`, `{hari}`, dan `{jam}`.
+- **Ekspor chat**: simpan pesan yang sudah termuat di chat terbuka sebagai berkas `.txt`.
 - **Chat ke nomor baru** (`Ctrl + N`): tanpa menyimpan kontak. `0812…` otomatis menjadi `62812…`.
-- **Catatan tempel** (`Alt + N`): panel memo samping dengan simpan otomatis.
+- **Catatan** (`Alt + N`): panel samping dengan banyak catatan, pencarian, dan simpan otomatis.
 - **Unduh status**: tombol unduh muncul saat Anda membuka status foto atau video.
 
 ### Tampilan
 - Tema **Standar gelap**, **OLED hitam**, dan **Layar hangat**.
 - **Daftar chat rapat**.
-- **Zoom** 75-150% (`Ctrl +` / `Ctrl -` / `Ctrl 0`).
+- **Mode ringkas di jendela sempit**: di bawah ±760 px (misalnya dibagi dua dengan aplikasi lain) WhatsApp Web biasanya terpotong karena lebar minimumnya 748 px. Aplikasi ini menampilkan satu panel saja: daftar chat, atau chat yang dibuka dengan tombol kembali (`‹`), seperti aplikasi native.
+- **Zoom** 75-150% (`Ctrl +` / `Ctrl -` / `Ctrl 0`). Memakai CSS `zoom`, yang kadang mengganggu tata letak daftar pesan; kembalikan ke 100% bila ada yang aneh.
 - **Kecepatan voice note** 0.5×-3.0× (`[` dan `]`).
 - **Picture-in-Picture** untuk video (`Alt + V`).
 
 ### Sistem
 - **Dua akun WhatsApp** dalam jendela terpisah (`--profile 2`).
 - **Telegram Web** berdampingan dengan WhatsApp (`Ctrl + 2`), serta **tampilan berdampingan 50:50** (`Ctrl + 3`).
-- **System Tray**: tombol Close menyembunyikan aplikasi ke tray, taskbar berkedip saat ada pesan, tooltip menampilkan jumlah belum dibaca.
+- **System Tray**: tombol Close menyembunyikan aplikasi ke tray, taskbar berkedip saat ada pesan, tooltip menampilkan jumlah belum dibaca, dan tombol taskbar diberi badge angka merah.
+- **Kunci saat disembunyikan** (opsional): kunci PIN otomatis saat jendela disembunyikan ke tray atau lewat Boss Key.
 - **Mulai otomatis** saat Windows menyala, langsung ke tray.
 - Link eksternal dibuka di browser default Windows.
 
@@ -80,14 +84,31 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 
 | File | Isi |
 | :--- | :--- |
-| `main.go` | Jendela WebView2, tray, hotkey, profil, dan script yang di-inject |
-| `assets/addon-core.js` | Registry selektor, diagnostik, pin chat, radar online |
-| `assets/addon.css` | Design system: token warna, Pusat Kontrol, dock, toast |
+| `main.go` | Jendela WebView2, tray, hotkey, profil, tata letak WhatsApp/Telegram |
+| `badge_windows.go` | Badge angka di tombol taskbar (ITaskbarList3) |
+| `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
+| `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
+| `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |
+| `assets/addon.css` | Design system: token warna, Pusat Kontrol, dock, toast, mode ringkas |
 | `assets/control-center.html` | Markup Pusat Kontrol |
 | `assets/preview.html` | Pratinjau Pusat Kontrol di browser tanpa menjalankan aplikasi |
+| `tools/dev.ps1`, `tools/smoke.js` | Menjalankan salinan dev dengan DevTools dan uji asap end-to-end |
+| `vendor/github.com/jchv/go-webview2` | Library WebView2 (ditambah `SetContentBounds` untuk ukuran viewport) |
 | `app.manifest`, `resource.rc`, `icon.ico` | Manifest, resource, dan ikon Windows |
 
 Untuk melihat perubahan tampilan Pusat Kontrol tanpa membangun aplikasi, jalankan `python -m http.server` di folder `assets` lalu buka `preview.html`.
+
+## Menguji perubahan
+
+WhatsApp Web sering berubah, jadi ada uji asap yang menjalankan fitur-fiturnya di WhatsApp Web sungguhan:
+
+```powershell
+# 1. Keluar dari aplikasi lewat tray (salinan dev memakai profil yang sama)
+powershell -ExecutionPolicy Bypass -File tools\dev.ps1
+node tools\smoke.js
+```
+
+Uji ini membuka satu chat tanpa pesan belum dibaca (agar tidak mengirim centang biru), tidak pernah menekan Enter, dan hanya mengetik teks uji di chat dengan diri sendiri. Hasilnya `PASS`/`FAIL` per fitur.
 
 ## Data sesi
 

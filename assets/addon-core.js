@@ -62,6 +62,9 @@
 			'[data-testid="navbar-footer-section"]',
 			'[data-testid="navbar-primary-section"]'
 		] },
+		mainScreen: { label: 'Wadah tata letak utama', need: 'app', sel: [
+			'[data-testid="wa-web-main-screen"]'
+		] },
 		statusViewer: { label: 'Penampil status', need: 'status', sel: [
 			'div[data-animate-status-v3="true"]',
 			'[data-testid="status-v3-main"]',
@@ -411,6 +414,62 @@
 	window.waRadar = { tick: radarTick, config: radar };
 
 	// ------------------------------------------------------------------
+	// 4a. Compact layout for narrow windows. WhatsApp Web's main container has min-width: 748px, so in a
+	//     narrower window the chat pane is cut off and the page scrolls sideways. Below that width we show
+	//     one pane at a time (chat list, or the open chat with a back button), like the native app.
+	// ------------------------------------------------------------------
+	var NARROW_PX = 760;
+	var compactEnabled = loadJSON('wa_compact_narrow', true);
+
+	function markLayout() {
+		var side = document.getElementById('side');
+		var screen = one('mainScreen');
+		if (!side || !screen) return;
+		var left = side.parentElement;
+		var root = left && left.parentElement;
+		if (!root || root.parentElement !== screen) return;
+		if (root.getAttribute('data-wa-layout') !== 'root') root.setAttribute('data-wa-layout', 'root');
+		if (left.getAttribute('data-wa-pane') !== 'list') left.setAttribute('data-wa-pane', 'list');
+		// The root also holds the nav rail, overlays and toasts; only the pane right after the list is the chat.
+		var chat = left.nextElementSibling;
+		if (chat && chat.getAttribute('data-wa-pane') !== 'chat') chat.setAttribute('data-wa-pane', 'chat');
+	}
+
+	function ensureBackButton() {
+		var b = document.getElementById('wa-narrow-back');
+		if (b || !document.body) return b;
+		b = document.createElement('button');
+		b.id = 'wa-narrow-back';
+		b.title = 'Kembali ke daftar chat';
+		b.setAttribute('aria-label', 'Kembali ke daftar chat');
+		b.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>';
+		b.addEventListener('click', function () { window.waCloseChat(); });
+		document.body.appendChild(b);
+		return b;
+	}
+
+	// Escape closes the open conversation in WhatsApp Web.
+	window.waCloseChat = function () {
+		var target = document.querySelector('#main footer [contenteditable="true"]') || document.querySelector('#main') || document.body;
+		['keydown', 'keyup'].forEach(function (type) {
+			target.dispatchEvent(new KeyboardEvent(type, { key: 'Escape', code: 'Escape', keyCode: 27, which: 27, bubbles: true, cancelable: true }));
+		});
+	};
+
+	function syncNarrow() {
+		if (!document.body) return;
+		var narrow = !!compactEnabled && window.innerWidth < NARROW_PX;
+		var root = document.documentElement;
+		if (root.hasAttribute('data-wa-narrow') !== narrow) {
+			if (narrow) root.setAttribute('data-wa-narrow', ''); else root.removeAttribute('data-wa-narrow');
+		}
+		var open = document.getElementById('main') ? '1' : '0';
+		if (document.body.getAttribute('data-wa-chat-open') !== open) document.body.setAttribute('data-wa-chat-open', open);
+		if (narrow) { markLayout(); ensureBackButton(); }
+	}
+	window.waSyncNarrow = syncNarrow;
+
+	// ------------------------------------------------------------------
 	// 4b. Unread filter. WhatsApp ships its own "Belum dibaca" chip, so we
 	//     drive that. Rows are positioned with transform, so hiding them
 	//     would leave gaps; the fallback dims non-unread rows instead.
@@ -535,6 +594,7 @@
 		var diagBtn = modal.querySelector('#wa-diag-run');
 		var exportBtn = modal.querySelector('#wa-cc-export-btn');
 		var lockHideCb = modal.querySelector('#wa-cc-lock-hide-cb');
+		var compactCb = modal.querySelector('#wa-cc-compact-narrow-cb');
 
 		if (pinCb) pinCb.onchange = function () {
 			pinState.enabled = pinCb.checked; savePins(); refreshPins();
@@ -547,6 +607,12 @@
 		if (radarNames) radarNames.onchange = function () { radar.names = radarNames.value; saveJSON('wa_radar_config', radar); };
 		if (diagBtn) diagBtn.onclick = function () { renderDiagnostics(modal); };
 		if (exportBtn) exportBtn.onclick = function () { window.waExportChat(); };
+		if (compactCb) compactCb.onchange = function () {
+			compactEnabled = compactCb.checked;
+			saveJSON('wa_compact_narrow', compactEnabled);
+			syncNarrow();
+			toast(compactEnabled ? 'Mode ringkas: aktif' : 'Mode ringkas: nonaktif');
+		};
 		if (lockHideCb) lockHideCb.onchange = function () {
 			saveJSON('wa_lock_on_hide', lockHideCb.checked);
 			toast(lockHideCb.checked ? 'Kunci saat disembunyikan: aktif' : 'Kunci saat disembunyikan: nonaktif');
@@ -569,6 +635,7 @@
 			if (radarCb) radarCb.checked = !!radar.enabled;
 			if (radarNames) radarNames.value = radar.names || '';
 			if (lockHideCb) lockHideCb.checked = !!loadJSON('wa_lock_on_hide', false);
+			if (compactCb) compactCb.checked = !!compactEnabled;
 			refreshPins();
 		};
 	};
@@ -577,7 +644,9 @@
 	// 6. Boot
 	// ------------------------------------------------------------------
 	whenDOMReady(function () {
-		new MutationObserver(schedulePins).observe(document.body, { childList: true, subtree: true });
+		new MutationObserver(function () { syncNarrow(); schedulePins(); }).observe(document.body, { childList: true, subtree: true });
+		window.addEventListener('resize', syncNarrow);
+		syncNarrow();
 		schedulePins();
 		setInterval(radarTick, 1500);
 	});

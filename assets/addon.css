@@ -248,3 +248,22 @@ body[data-wa-open-blur="1"] #main [data-testid="image-thumb"]:hover { filter: no
 .wa-blur-toggle { right: 34px; }
 .wa-pin-host:hover > .wa-blur-toggle, .wa-pin-host > .wa-blur-toggle.on { display: flex; }
 .wa-blur-toggle.on { color: var(--wa-primary-text); border-color: var(--wa-primary); }
+
+/* ---------- Compact layout (narrow windows) ---------- */
+html[data-wa-narrow] [data-wa-layout="root"] { min-width: 0 !important; width: 100% !important; }
+html[data-wa-narrow] [data-wa-pane="list"],
+html[data-wa-narrow] [data-wa-pane="chat"] { flex: 1 1 0 !important; max-width: none !important; min-width: 0 !important; width: auto !important; }
+html[data-wa-narrow] body[data-wa-chat-open="0"] [data-wa-pane="chat"] { display: none !important; }
+html[data-wa-narrow] body[data-wa-chat-open="1"] [data-wa-pane="list"] { display: none !important; }
+html[data-wa-narrow] body[data-wa-chat-open="1"] #main header { padding-left: 44px !important; }
+
+#wa-narrow-back { display: none; position: fixed; top: 11px; left: 70px; z-index: 2147483000; width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--wa-text-muted); cursor: pointer; align-items: center; justify-content: center; padding: 0; }
+#wa-narrow-back:hover { background: rgba(134, 150, 160, 0.18); color: var(--wa-text); }
+html[data-wa-narrow] body[data-wa-chat-open="1"] #wa-narrow-back { display: flex; }
+
+/* Drawers (settings, contact info...) sit in their own layer that mirrors the two panes. In compact mode
+   let each one cover the whole width next to the nav rail, and drop the pane divider. */
+html[data-wa-narrow] [data-testid="drawer-left"],
+html[data-wa-narrow] [data-testid="drawer-middle"] { position: absolute !important; top: 0; bottom: 0; left: 0; right: 0; width: auto !important; max-width: none !important; flex: none !important; border-left: 0 !important; }
+/* The floating dock would cover the message box; it stays available from the nav rail button. */
+html[data-wa-narrow] body[data-wa-chat-open="1"] .wa-dock { display: none !important; }

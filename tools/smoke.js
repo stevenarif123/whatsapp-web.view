@@ -88,7 +88,16 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
   // ---- 6. Quick replies (needs the composer). Uses the "/thanks" -> "terima kasih" reply if it exists.
   const replies = JSON.parse((await ev(`localStorage.getItem('wa_quick_replies')`)) || '[]');
   const thanks = replies.find(r => r.key === '/thanks');
-  if (!chatOpen || !(await ev(`!!${COMP}`))) {
+  // Typing makes WhatsApp send a "typing..." presence to the other person, so only type in the chat with
+  // yourself (title ends with "(Anda)" / "(You)"). Set WA_SMOKE_ANY_CHAT=1 to type in the open chat anyway.
+  const openedSelf = await ev(`(async()=>{
+    var row=waSel.all('chatRows').find(r=>/\((Anda|You)\)\s*$/.test((r.querySelector('[data-testid="cell-frame-title"]')||r).textContent||''));
+    if(!row) return false;
+    var t=row.querySelector('[data-testid="cell-frame-container"]'); ['mousedown','mouseup','click'].forEach(e=>t.dispatchEvent(new MouseEvent(e,{bubbles:true,cancelable:true,view:window})));
+    await new Promise(r=>setTimeout(r,2000)); return !!document.querySelector('#main footer [contenteditable="true"]') })()`);
+  if (!openedSelf && !process.env.WA_SMOKE_ANY_CHAT) {
+    console.log('SKIP  quick replies: no chat with yourself found (so no "typing..." would be sent to anyone)');
+  } else if (!(await ev(`!!${COMP}`))) {
     check('quick replies', false, 'no composer');
   } else if (!thanks) {
     console.log('SKIP  quick replies: no "/thanks" reply defined');
