@@ -1999,9 +1999,16 @@
 				var autoCb = document.getElementById('wa-cc-autostart-cb');
 				if (autoCb) {
 					autoCb.onchange = function() {
-						if (window.setAppAutoStart) {
-							window.setAppAutoStart(autoCb.checked);
-							showAddonToast(autoCb.checked ? 'Mulai Otomatis: Aktif' : 'Mulai Otomatis: Nonaktif');
+						if (window.setAutoStartStatus) {
+							var want = autoCb.checked;
+							window.setAutoStartStatus(want).then(function(ok) {
+								if (!ok) {
+									autoCb.checked = !want;
+									showAddonToast('Gagal mengubah Mulai Otomatis');
+									return;
+								}
+								showAddonToast(want ? 'Mulai Otomatis: Aktif' : 'Mulai Otomatis: Nonaktif');
+							});
 						}
 					};
 				}
