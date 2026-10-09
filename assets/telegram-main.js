@@ -621,6 +621,47 @@
 		})();
 	})();
 
+	// Feature: Presence guard. While the app is locked, Telegram Web must not see the page as visible,
+	// focused or used, otherwise it keeps reporting the account as online. Runs at document start, before
+	// Telegram's own scripts register their listeners. The lock section below toggles it.
+	(function() {
+		var guarded = false;
+		try { guarded = localStorage.getItem('tg_is_locked') === 'true'; } catch(e) {}
+
+		function define(obj, prop, getter) {
+			try { Object.defineProperty(obj, prop, { get: getter, configurable: true }); } catch(e) {}
+		}
+		define(document, 'hidden', function() { return guarded ? true : Document.prototype.__lookupGetter__('hidden').call(document); });
+		define(document, 'webkitHidden', function() { return guarded ? true : Document.prototype.__lookupGetter__('webkitHidden').call(document); });
+		define(document, 'visibilityState', function() { return guarded ? 'hidden' : Document.prototype.__lookupGetter__('visibilityState').call(document); });
+		define(document, 'webkitVisibilityState', function() { return guarded ? 'hidden' : Document.prototype.__lookupGetter__('webkitVisibilityState').call(document); });
+		var origHasFocus = Document.prototype.hasFocus;
+		document.hasFocus = function() { return guarded ? false : origHasFocus.call(document); };
+
+		// Real input and focus events must not reach Telegram while locked; the lock UI keeps working.
+		var BLOCKED = ['focus', 'blur', 'visibilitychange', 'webkitvisibilitychange', 'mousemove', 'mousedown', 'mouseup',
+			'click', 'wheel', 'keydown', 'keyup', 'keypress', 'touchstart', 'touchmove', 'pointermove', 'pointerdown'];
+		function inLockUI(t) {
+			return !!(t && t.nodeType === 1 && t.closest && t.closest('#tg-lock-overlay, #tg-change-pin-modal'));
+		}
+		BLOCKED.forEach(function(name) {
+			window.addEventListener(name, function(e) {
+				if (!guarded || !e.isTrusted || inLockUI(e.target)) return;
+				e.stopImmediatePropagation();
+			}, true);
+		});
+
+		window.__tgSetPresenceGuard = function(on) {
+			on = !!on;
+			if (guarded === on) return;
+			guarded = on;
+			try {
+				document.dispatchEvent(new Event('visibilitychange'));
+				window.dispatchEvent(new Event(on ? 'blur' : 'focus'));
+			} catch(e) {}
+		};
+	})();
+
 	// Feature: Telegram App Lock with PIN (Ctrl + L & 5-minute Inactivity Auto-Lock)
 	(function() {
 		var storedPin = '1234';
@@ -734,6 +775,7 @@
 					pinInput.value = '';
 					errEl.textContent = '';
 					try { localStorage.setItem('tg_is_locked', 'false'); } catch(e) {}
+						if (window.__tgSetPresenceGuard) window.__tgSetPresenceGuard(false);
 					showTgToast('🔓 Telegram terbuka');
 					resetInactivityTimer();
 				} else {
@@ -912,6 +954,7 @@
 				}
 				overlay.style.display = 'flex';
 				try { localStorage.setItem('tg_is_locked', 'true'); } catch(e) {}
+					if (window.__tgSetPresenceGuard) window.__tgSetPresenceGuard(true);
 				var input = document.getElementById('tg-pin-input');
 				if (input) {
 					input.value = '';
