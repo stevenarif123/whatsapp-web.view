@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -32,6 +33,40 @@ var addonMainJS string
 
 //go:embed assets/telegram-main.js
 var telegramMainJS string
+
+// App icon (also the WhatsApp notification icon) and the Telegram notification icon. They are written
+// to the user config dir at startup so the app and its toasts do not depend on files next to the exe.
+//
+//go:embed icon.ico
+var appIconICO []byte
+
+//go:embed assets/notif-telegram.png
+var telegramNotifPNG []byte
+
+const (
+	waToastAppID = "WhatsApp Desktop"
+	tgToastAppID = "Telegram Desktop"
+)
+
+// iconFile writes data to <config>/WhatsAppDesktopLight/icons/<name> when missing or outdated and returns
+// the path. On failure it returns "" so a toast is still shown, just without a custom icon.
+func iconFile(name string, data []byte) string {
+	configDir, err := os.UserConfigDir()
+	if err != nil || configDir == "" {
+		return ""
+	}
+	dir := filepath.Join(configDir, "WhatsAppDesktopLight", "icons")
+	if os.MkdirAll(dir, 0755) != nil {
+		return ""
+	}
+	path := filepath.Join(dir, name)
+	if cur, err := os.ReadFile(path); err != nil || !bytes.Equal(cur, data) {
+		if os.WriteFile(path, data, 0644) != nil {
+			return ""
+		}
+	}
+	return path
+}
 
 // jsString returns s as a quoted JavaScript string literal.
 func jsString(s string) string {
@@ -716,11 +751,10 @@ func initTelegramChild() {
 
 	procSetWindowPos.Call(hTG, 0, 0, 0, 0, 0, SWP_NOMOVE|SWP_NOSIZE|SWP_NOZORDER|SWP_FRAMECHANGED)
 
-	executablePath, _ := os.Executable()
-	iconFullPath := filepath.Join(filepath.Dir(executablePath), "icon.ico")
+	tgNotifIcon := iconFile("notif-telegram.png", telegramNotifPNG)
 
 	_ = w.Bind("sendNativeNotification", func(title, body string) {
-		go showNativeNotification(title, body, iconFullPath)
+		go showNativeNotification(tgToastAppID, title, body, tgNotifIcon)
 	})
 	_ = w.Bind("openExternalLink", func(rawURL string) {
 		openExternalLink(rawURL)
@@ -939,8 +973,7 @@ func telegramWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 }
 
 func runTelegramWindow(userDataDir string, startMinimized bool) {
-	executablePath, _ := os.Executable()
-	iconFullPath := filepath.Join(filepath.Dir(executablePath), "icon.ico")
+	tgNotifIcon := iconFile("notif-telegram.png", telegramNotifPNG)
 
 	opts := webview2.WebViewOptions{
 		Window:    nil,
@@ -981,7 +1014,7 @@ func runTelegramWindow(userDataDir string, startMinimized bool) {
 	origWndProc = setWindowLongPtr(hwnd, GWLP_WNDPROC, windows.NewCallback(telegramWndProc))
 
 	_ = w.Bind("sendNativeNotification", func(title, body string) {
-		go showNativeNotification(title, body, iconFullPath)
+		go showNativeNotification(tgToastAppID, title, body, tgNotifIcon)
 	})
 	_ = w.Bind("openExternalLink", func(rawURL string) {
 		openExternalLink(rawURL)
@@ -1024,7 +1057,7 @@ func sanitizeNotificationText(s string, maxLen int) string {
 	return res
 }
 
-func showNativeNotification(title, message, iconPath string) {
+func showNativeNotification(appID, title, message, iconPath string) {
 	title = sanitizeNotificationText(title, 128)
 	message = sanitizeNotificationText(message, 512)
 	if title == "" && message == "" {
@@ -1032,7 +1065,7 @@ func showNativeNotification(title, message, iconPath string) {
 	}
 
 	notification := toast.Notification{
-		AppID:   "WhatsApp Desktop",
+		AppID:   appID,
 		Title:   title,
 		Message: message,
 		Icon:    iconPath,
@@ -1111,8 +1144,7 @@ func main() {
 		os.Exit(0)
 	}
 	userDataDir := getUserDataDir(profileID)
-	executablePath, _ := os.Executable()
-	iconFullPath := filepath.Join(filepath.Dir(executablePath), "icon.ico")
+	iconFullPath := iconFile("icon.ico", appIconICO)
 
 	opts := webview2.WebViewOptions{
 		Window:    nil,
@@ -1176,7 +1208,7 @@ func main() {
 
 	// Bind native notification bridge
 	_ = w.Bind("sendNativeNotification", func(title, body string) {
-		go showNativeNotification(title, body, iconFullPath)
+		go showNativeNotification(waToastAppID, title, body, iconFullPath)
 	})
 
 	// Bind external link handler (opens in system default browser)

@@ -37,6 +37,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 ### Sistem
 - **Dua akun WhatsApp** dalam jendela terpisah (`--profile 2`).
 - **Telegram Web** berdampingan dengan WhatsApp (`Ctrl + 2`), serta **tampilan berdampingan 50:50** (`Ctrl + 3`).
+- **Telegram**: kunci PIN (`Ctrl + L`) yang juga membuat Telegram tidak lagi terlihat online selama terkunci, **Mode Privasi** blur (`Alt + P`, tombol Privasi di dock, Shift+klik untuk ganti intensitas), dan notifikasi dengan ikon serta nama aplikasi berbeda dari WhatsApp.
 - **System Tray**: tombol Close menyembunyikan aplikasi ke tray, taskbar berkedip saat ada pesan, tooltip menampilkan jumlah belum dibaca, dan tombol taskbar diberi badge angka merah.
 - **Kunci saat disembunyikan** (opsional): kunci PIN otomatis saat jendela disembunyikan ke tray atau lewat Boss Key.
 - **Mulai otomatis** saat Windows menyala, langsung ke tray.
@@ -95,6 +96,9 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `tools/dev.ps1`, `tools/smoke.js` | Menjalankan salinan dev dengan DevTools dan uji asap end-to-end |
 | `vendor/github.com/jchv/go-webview2` | Library WebView2 (ditambah `SetContentBounds` untuk ukuran viewport) |
 | `app.manifest`, `resource.rc`, `icon.ico` | Manifest, resource, dan ikon Windows |
+| `assets/notif-telegram.png`, `tools/gen_telegram_icon.py` | Ikon notifikasi Telegram dan skrip pembuatnya |
+
+`icon.ico` adalah ikon aplikasi dan notifikasi WhatsApp. Ikon ini ditanam ke exe lewat `rsrc.syso`; setelah mengganti `icon.ico`, buat ulang dengan `windres -O coff -i resource.rc -o rsrc.syso`.
 
 Untuk melihat perubahan tampilan Pusat Kontrol tanpa membangun aplikasi, jalankan `python -m http.server` di folder `assets` lalu buka `preview.html`.
 

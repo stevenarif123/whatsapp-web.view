@@ -91,6 +91,11 @@
 						'<span>Berdampingan</span>' +
 					'</button>',
 					'<div class="wa-dock-sep"></div>',
+					'<button id="tg-tab-privacy" class="wa-dock-item" title="Mode Privasi: blur chat (Alt+P). Shift+klik untuk ganti intensitas">' +
+						'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>' +
+						'<span>Privasi</span>' +
+					'</button>',
+					'<div class="wa-dock-sep"></div>',
 					'<button id="tg-tab-lock" class="wa-dock-item" title="Kunci Telegram (Ctrl+L)">' +
 						'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
 						'<span>Kunci</span>' +
@@ -619,6 +624,115 @@
 				}
 			}, true);
 		})();
+	})();
+
+	// Feature: Privacy mode (blur) for Telegram. Alt+P or Ctrl+Shift+P toggles it, the dock button does the
+	// same and Shift+click cycles the blur strength. Hovering a blurred element reveals it.
+	(function() {
+		var LEVELS = [3, 5, 8];
+		var cfg = { active: false, intensity: 5, contacts: true, preview: true, messages: true, media: true, avatars: false };
+		try {
+			var saved = localStorage.getItem('tg_privacy_config');
+			if (saved) cfg = Object.assign({}, cfg, JSON.parse(saved));
+		} catch(e) {}
+
+		function save() {
+			try { localStorage.setItem('tg_privacy_config', JSON.stringify(cfg)); } catch(e) {}
+		}
+
+		function buildCSS() {
+			var P = 'body.tg-privacy-active ';
+			var sel = [];
+			if (cfg.contacts) sel.push(P + '.chatlist-chat .peer-title', P + '.chatlist-chat .user-title', P + '.chat-info .peer-title', P + '.bubble .peer-title', P + '.bubble .reply-title');
+			if (cfg.preview) sel.push(P + '.chatlist-chat .dialog-subtitle');
+			if (cfg.messages) sel.push(P + '.bubble-content');
+			if (cfg.media) sel.push(P + '.bubble .media-photo', P + '.bubble .media-video', P + '.bubble .album-item-media', P + '.bubble .attachment');
+			if (cfg.avatars) sel.push(P + '.chatlist-chat .avatar', P + '.chat-info .avatar', P + '.bubbles-group-avatar-container .avatar');
+			if (!sel.length) return '';
+			return sel.join(',\n') + ' { filter: blur(' + cfg.intensity + 'px) !important; transition: filter 0.15s ease-in-out !important; }\n' +
+				sel.map(function(s) { return s + ':hover'; }).join(',\n') + ' { filter: none !important; }';
+		}
+
+		function applyStyle() {
+			var root = document.head || document.documentElement;
+			if (!root) return;
+			var style = document.getElementById('tg-privacy-style');
+			if (!style) {
+				style = document.createElement('style');
+				style.id = 'tg-privacy-style';
+				root.appendChild(style);
+			}
+			var css = buildCSS();
+			if (style.textContent !== css) style.textContent = css;
+		}
+
+		function syncBody() {
+			if (!document.body) return;
+			document.body.classList.toggle('tg-privacy-active', !!cfg.active);
+			var btn = document.getElementById('tg-tab-privacy');
+			if (btn) btn.classList.toggle('active', !!cfg.active);
+		}
+
+		function toast(msg) {
+			var root = document.documentElement || document.body;
+			if (!root) return;
+			var t = document.getElementById('tg-toast-msg');
+			if (!t) {
+				t = document.createElement('div');
+				t.id = 'tg-toast-msg';
+				t.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(23,33,43,0.96);color:#ffffff;padding:8px 18px;border-radius:20px;font-size:12.5px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.12);z-index:2147483647;pointer-events:none;transition:opacity 0.2s ease,transform 0.2s ease;opacity:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
+				root.appendChild(t);
+			}
+			t.textContent = msg;
+			t.style.opacity = '1';
+			t.style.transform = 'translateX(-50%) translateY(0)';
+			clearTimeout(t._timer);
+			t._timer = setTimeout(function() {
+				t.style.opacity = '0';
+				t.style.transform = 'translateX(-50%) translateY(6px)';
+			}, 2200);
+		}
+
+		window.toggleTgPrivacy = function(force) {
+			cfg.active = typeof force === 'boolean' ? force : !cfg.active;
+			save();
+			applyStyle();
+			syncBody();
+			toast(cfg.active ? 'Mode Privasi aktif (' + cfg.intensity + 'px)' : 'Mode Privasi nonaktif');
+			return cfg.active;
+		};
+
+		window.cycleTgPrivacyIntensity = function() {
+			var i = LEVELS.indexOf(cfg.intensity);
+			cfg.intensity = LEVELS[(i + 1) % LEVELS.length];
+			save();
+			applyStyle();
+			toast('Intensitas blur: ' + cfg.intensity + 'px');
+		};
+
+		function onKey(e) {
+			if ((e.altKey || (e.ctrlKey && e.shiftKey)) && (e.code === 'KeyP' || e.key === 'p' || e.key === 'P')) {
+				if (e.preventDefault) e.preventDefault();
+				if (e.stopPropagation) e.stopPropagation();
+				window.toggleTgPrivacy();
+			}
+		}
+		window.addEventListener('keydown', onKey, true);
+
+		document.addEventListener('click', function(e) {
+			var btn = e.target && e.target.closest && e.target.closest('#tg-tab-privacy');
+			if (!btn) return;
+			e.preventDefault();
+			e.stopPropagation();
+			if (e.shiftKey) window.cycleTgPrivacyIntensity();
+			else window.toggleTgPrivacy();
+		}, true);
+
+		// The dock is re-rendered by Telegram's SPA, so re-assert state periodically.
+		applyStyle();
+		syncBody();
+		document.addEventListener('DOMContentLoaded', function() { applyStyle(); syncBody(); }, { once: true });
+		setInterval(function() { applyStyle(); syncBody(); }, 1000);
 	})();
 
 	// Feature: Presence guard. While the app is locked, Telegram Web must not see the page as visible,
