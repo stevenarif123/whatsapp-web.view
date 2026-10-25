@@ -46,7 +46,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **System Tray**: tombol Close menyembunyikan aplikasi ke tray, taskbar berkedip saat ada pesan, tooltip menampilkan jumlah belum dibaca, dan tombol taskbar diberi badge angka merah.
 - **Kunci saat disembunyikan** (opsional): kunci PIN otomatis saat jendela disembunyikan ke tray atau lewat Boss Key.
 - **Mulai otomatis** saat Windows menyala, langsung ke tray.
-- **Cek pembaruan**: sekali sehari aplikasi memeriksa rilis terbaru di GitHub dan menampilkan banner jika ada versi baru (tombol Unduh membuka halaman rilis, atau Lewati versi ini). Tidak ada yang diunduh atau dipasang otomatis; bisa dimatikan di Pusat Kontrol > Sistem.
+- **Pembaruan otomatis**: sekali sehari aplikasi memeriksa rilis terbaru di GitHub dan menampilkan banner jika ada versi baru. **Perbarui sekarang** mengunduh `WhatsApp.exe` dari rilis repositori ini, memasangnya hanya jika SHA-256-nya cocok dengan `WhatsApp.exe.sha256` di rilis yang sama dan file itu program Windows 64-bit, lalu membuka ulang aplikasi. Versi lama disimpan sebagai `WhatsApp.exe.old` dan dikembalikan bila pemasangan gagal. Sesi login, PIN, catatan, dan pengaturan tidak tersentuh. Ada juga tombol Unduh (halaman rilis) dan Lewati versi ini; pengecekan bisa dimatikan di Pusat Kontrol > Sistem.
 - **Cadangkan & pulihkan pengaturan**: satu file `.json` berisi balasan cepat, catatan, pin & blur chat, radar, tampilan, dan pengaturan notifikasi. PIN dan sesi login tidak ikut. Pusat Kontrol > Sistem.
 - Link eksternal dibuka di browser default Windows.
 
@@ -89,6 +89,14 @@ go mod download
 go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 ```
 
+### Merilis versi baru
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\release.ps1 -Version 1.2.0
+```
+
+Skrip ini menjalankan test, membangun `WhatsApp.exe` dengan versi tertanam, dan menulis `WhatsApp.exe.sha256`. Lalu buat rilis di GitHub dengan tag `v1.2.0` (bukan draft atau pre-release) dan unggah **kedua** file. Aplikasi yang sedang dipakai akan menawarkan **Perbarui sekarang**; tanpa file `.sha256`, aplikasi hanya menawarkan tombol Unduh. Tag rilis harus sama dengan versi di exe, kalau tidak aplikasi akan terus menawarkan pembaruan yang sama.
+
 ## Struktur proyek
 
 | File | Isi |
@@ -99,7 +107,8 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `downloads.go` | Dialog Save As untuk unduhan dan laporan progres ke halaman |
 | `notify.go` | Toast, klik notifikasi (protokol `wadesktoplight:` + `WM_COPYDATA`), jam tenang, chat dibisukan |
 | `notes.go` | Penyimpanan bersama WhatsApp & Telegram: catatan dan balasan cepat |
-| `updater.go` | Cek pembaruan harian ke GitHub Releases |
+| `updater.go`, `selfupdate.go` | Cek pembaruan harian ke GitHub Releases; unduh, verifikasi checksum, ganti exe, dan buka ulang |
+| `tools/release.ps1` | Membangun rilis: `WhatsApp.exe` dengan versi tertanam dan `WhatsApp.exe.sha256` |
 | `backup.go` | Ekspor & impor pengaturan |
 | `reminders.go` | Pengingat balas |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |

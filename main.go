@@ -1179,6 +1179,9 @@ func main() {
 			break
 		}
 	}
+	// Started by an update: let the old version exit first, then remove it.
+	waitForUpdatedFrom(os.Args[1:])
+	cleanupOldExe()
 	registerNotifyProtocol()
 
 	isTelegram := false

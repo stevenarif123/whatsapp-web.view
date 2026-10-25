@@ -47,6 +47,14 @@ type updateInfo struct {
 	Skipped bool   `json:"skipped"`
 	Enabled bool   `json:"enabled"`
 	Error   string `json:"error,omitempty"`
+	// CanInstall: the release carries WhatsApp.exe and its checksum, so it can be installed in place.
+	CanInstall bool `json:"canInstall"`
+}
+
+// releaseInfo is the latest release as reported by GitHub.
+type releaseInfo struct {
+	Tag, URL, Notes string
+	ExeURL, SumURL  string // download links of WhatsApp.exe and WhatsApp.exe.sha256, if published
 }
 
 var updateMu sync.Mutex
@@ -117,21 +125,22 @@ func isNewerVersion(latest, current string) bool {
 }
 
 // fetchLatestRelease asks GitHub for the newest published release.
-func fetchLatestRelease() (tag, url, notes string, err error) {
+func fetchLatestRelease() (releaseInfo, error) {
+	var out releaseInfo
 	client := &http.Client{Timeout: 15 * time.Second}
 	req, err := http.NewRequest("GET", updateAPIURL, nil)
 	if err != nil {
-		return "", "", "", err
+		return out, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("User-Agent", "WhatsAppDesktopLight/"+appVersion)
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", "", "", err
+		return out, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return "", "", "", fmt.Errorf("GitHub menjawab %s", resp.Status)
+		return out, fmt.Errorf("GitHub menjawab %s", resp.Status)
 	}
 	var rel struct {
 		TagName string `json:"tag_name"`
@@ -139,22 +148,40 @@ func fetchLatestRelease() (tag, url, notes string, err error) {
 		Body    string `json:"body"`
 		Draft   bool   `json:"draft"`
 		Pre     bool   `json:"prerelease"`
+		Assets  []struct {
+			Name string `json:"name"`
+			URL  string `json:"browser_download_url"`
+		} `json:"assets"`
 	}
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&rel); err != nil {
-		return "", "", "", err
+		return out, err
 	}
 	if rel.Draft || rel.Pre || rel.TagName == "" {
-		return "", "", "", fmt.Errorf("tidak ada rilis")
+		return out, fmt.Errorf("tidak ada rilis")
 	}
+	out.Tag = rel.TagName
+	out.URL = rel.HTMLURL
 	// Only ever link to this repository's release pages.
-	if !strings.HasPrefix(rel.HTMLURL, "https://github.com/"+updateRepo+"/releases/") {
-		rel.HTMLURL = "https://github.com/" + updateRepo + "/releases/latest"
+	if !strings.HasPrefix(out.URL, "https://github.com/"+updateRepo+"/releases/") {
+		out.URL = "https://github.com/" + updateRepo + "/releases/latest"
 	}
-	notes = rel.Body
-	if len(notes) > 600 {
-		notes = notes[:600] + "…"
+	out.Notes = rel.Body
+	if len(out.Notes) > 600 {
+		out.Notes = out.Notes[:600] + "…"
 	}
-	return rel.TagName, rel.HTMLURL, notes, nil
+	// Downloads are only taken from this repository's release assets.
+	for _, a := range rel.Assets {
+		if !strings.HasPrefix(a.URL, releaseDownloadPrefix) {
+			continue
+		}
+		switch a.Name {
+		case updateAssetName:
+			out.ExeURL = a.URL
+		case updateSumName:
+			out.SumURL = a.URL
+		}
+	}
+	return out, nil
 }
 
 // checkForUpdates queries GitHub now. It runs off the UI thread.
@@ -164,15 +191,16 @@ func checkForUpdates() updateInfo {
 	updateMu.Unlock()
 
 	info := updateInfo{Current: appVersion, Enabled: s.enabled()}
-	tag, url, notes, err := fetchLatestRelease()
+	rel, err := fetchLatestRelease()
 	if err != nil {
 		info.Error = err.Error()
 		return info
 	}
-	info.Latest = strings.TrimPrefix(tag, "v")
-	info.URL = url
-	info.Notes = notes
-	info.Newer = isNewerVersion(tag, appVersion)
+	info.Latest = strings.TrimPrefix(rel.Tag, "v")
+	info.URL = rel.URL
+	info.Notes = rel.Notes
+	info.Newer = isNewerVersion(rel.Tag, appVersion)
+	info.CanInstall = info.Newer && rel.ExeURL != "" && rel.SumURL != ""
 	info.Skipped = info.Newer && s.Skipped == info.Latest
 
 	updateMu.Lock()
@@ -241,6 +269,20 @@ func bindUpdates(w webview2.WebView) {
 			info := checkForUpdates()
 			w.Dispatch(func() { send("waUpdateResult", info) })
 		}()
+	})
+	_ = w.Bind("installUpdateNow", func() {
+		report := func(state, msg string) {
+			data, _ := json.Marshal(map[string]string{"state": state, "message": msg})
+			w.Dispatch(func() { w.Eval(fmt.Sprintf("window.waUpdateProgress && window.waUpdateProgress(%s)", data)) })
+		}
+		quit := func() {
+			w.Dispatch(func() {
+				forceQuit = true
+				removeTrayIcon()
+				procPostMessage.Call(globalHwnd, WM_CLOSE, 0, 0)
+			})
+		}
+		go installUpdate(report, quit)
 	})
 	startUpdateChecks(w.Dispatch, func(info updateInfo) { send("waUpdateAvailable", info) })
 }

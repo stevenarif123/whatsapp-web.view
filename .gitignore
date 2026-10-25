@@ -2,3 +2,6 @@ WhatsApp.exe
 WhatsApp.exe~
 *.tmp
 *.log
+WhatsApp.exe.sha256
+WhatsApp.exe.old
+WhatsApp.exe.new

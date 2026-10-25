@@ -640,12 +640,25 @@
 				'background:var(--wa-bg-elevated,#182229);border:1px solid var(--wa-border-strong,rgba(134,150,160,.28));border-radius:10px;padding:8px 10px 8px 14px;' +
 				'box-shadow:0 10px 30px rgba(0,0,0,.55);font-family:var(--wa-font,Segoe UI,sans-serif);font-size:12.5px;color:var(--wa-text,#e9edef);';
 			bar.innerHTML = '<span class="wa-upd-text"></span>' +
-				'<button class="wa-btn wa-btn-primary wa-btn-sm wa-upd-get">Unduh</button>' +
+				'<button class="wa-btn wa-btn-primary wa-btn-sm wa-upd-install">Perbarui sekarang</button>' +
+				'<button class="wa-btn wa-btn-secondary wa-btn-sm wa-upd-get">Unduh</button>' +
 				'<button class="wa-btn wa-btn-secondary wa-btn-sm wa-upd-skip">Lewati versi ini</button>' +
 				'<button class="wa-close-btn wa-upd-close" title="Tutup" aria-label="Tutup" style="width:24px;height:24px;">✕</button>';
 			document.body.appendChild(bar);
 		}
 		bar.querySelector('.wa-upd-text').textContent = 'Versi baru ' + info.latest + ' tersedia (Anda memakai ' + info.current + ')';
+		// In-place install needs WhatsApp.exe and its checksum in the release; otherwise only the download link.
+		var install = bar.querySelector('.wa-upd-install');
+		var get = bar.querySelector('.wa-upd-get');
+		install.style.display = info.canInstall && window.installUpdateNow ? '' : 'none';
+		get.className = 'wa-btn wa-btn-sm wa-upd-get ' + (install.style.display === 'none' ? 'wa-btn-primary' : 'wa-btn-secondary');
+		install.disabled = false;
+		install.onclick = function () {
+			install.disabled = true;
+			bar.querySelector('.wa-upd-skip').style.display = 'none';
+			bar.querySelector('.wa-upd-text').textContent = 'Menyiapkan pembaruan…';
+			window.installUpdateNow();
+		};
 		bar.querySelector('.wa-upd-get').onclick = function () {
 			if (window.openExternalLink) window.openExternalLink(info.url);
 			bar.remove();
@@ -658,6 +671,22 @@
 		bar.querySelector('.wa-upd-close').onclick = function () { bar.remove(); };
 	}
 	window.waUpdateAvailable = function (info) { whenDOMReady(function () { showUpdateBanner(info); }); };
+	// Progress of "Perbarui sekarang" (selfupdate.go)
+	window.waUpdateProgress = function (p) {
+		var bar = document.getElementById('wa-update-banner');
+		var text = bar && bar.querySelector('.wa-upd-text');
+		var msg = {
+			downloading: 'Mengunduh versi ' + (p.message || 'baru') + ' dan memeriksa checksum…',
+			installing: 'Memasang pembaruan…',
+			restarting: 'Selesai, aplikasi dibuka ulang…'
+		}[p.state] || ('Pembaruan gagal: ' + (p.message || 'tidak diketahui'));
+		if (text) text.textContent = msg;
+		if (p.state === 'error') {
+			toast(msg);
+			var install = bar && bar.querySelector('.wa-upd-install');
+			if (install) install.disabled = false;
+		}
+	};
 	// Result of "Cek pembaruan sekarang"
 	window.waUpdateResult = function (info) {
 		var status = document.getElementById('wa-update-status');
