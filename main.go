@@ -1269,7 +1269,8 @@ func main() {
 	enableDownloads(w, hwnd)
 	bindNotes(w)
 
-	// Update check
+	// Settings backup and the update check
+	bindBackup(w, hwnd)
 	bindUpdates(w)
 
 	// Bind unread message counter

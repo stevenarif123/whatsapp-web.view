@@ -45,6 +45,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **Kunci saat disembunyikan** (opsional): kunci PIN otomatis saat jendela disembunyikan ke tray atau lewat Boss Key.
 - **Mulai otomatis** saat Windows menyala, langsung ke tray.
 - **Cek pembaruan**: sekali sehari aplikasi memeriksa rilis terbaru di GitHub dan menampilkan banner jika ada versi baru (tombol Unduh membuka halaman rilis, atau Lewati versi ini). Tidak ada yang diunduh atau dipasang otomatis; bisa dimatikan di Pusat Kontrol > Sistem.
+- **Cadangkan & pulihkan pengaturan**: satu file `.json` berisi balasan cepat, catatan, pin & blur chat, radar, tampilan, dan pengaturan notifikasi. PIN dan sesi login tidak ikut. Pusat Kontrol > Sistem.
 - Link eksternal dibuka di browser default Windows.
 
 ### Diagnostik
@@ -96,6 +97,7 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `notify.go` | Toast, klik notifikasi (protokol `wadesktoplight:` + `WM_COPYDATA`), jam tenang, chat dibisukan |
 | `notes.go` | Penyimpanan bersama WhatsApp & Telegram: catatan dan balasan cepat |
 | `updater.go` | Cek pembaruan harian ke GitHub Releases |
+| `backup.go` | Ekspor & impor pengaturan |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
 | `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |

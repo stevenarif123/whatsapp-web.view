@@ -626,7 +626,7 @@
 	};
 
 	// ------------------------------------------------------------------
-	// 4d. Update banner (Go: updater.go)
+	// 4d. Update banner, settings backup (Go: updater.go, backup.go)
 	// ------------------------------------------------------------------
 	function showUpdateBanner(info) {
 		if (!info || !info.newer || !document.body) return;
@@ -666,6 +666,34 @@
 		if (status) status.textContent = msg;
 		toast(msg);
 		if (info.newer && !info.error) showUpdateBanner(info);
+	};
+
+	// Settings backup: the page's add-on entries go to Go, which adds the shared data and writes the file.
+	window.waExportSettings = function () {
+		if (typeof window.getBackupKeys !== 'function') return;
+		window.getBackupKeys().then(function (keys) {
+			var page = {};
+			(keys || []).forEach(function (k) {
+				try { var v = localStorage.getItem(k); if (v !== null) page[k] = v; } catch (e) {}
+			});
+			window.exportSettings(page);
+		});
+	};
+	window.waImportSettings = function () {
+		if (!confirm('Impor pengaturan dari file cadangan? Pengaturan, catatan, dan balasan cepat yang sekarang akan diganti.')) return;
+		if (typeof window.importSettings === 'function') window.importSettings();
+	};
+	window.waSettingsResult = function (r) {
+		if (!r || r.cancelled) return;
+		if (!r.ok) { toast('Gagal: ' + (r.error || 'tidak diketahui')); return; }
+		if (r.action === 'export') { toast('Pengaturan disimpan ke ' + r.name); return; }
+		Object.keys(r.page || {}).forEach(function (k) {
+			try { localStorage.setItem(k, r.page[k]); } catch (e) {}
+		});
+		// Shared notes and quick replies are refreshed from Go on reload
+		try { localStorage.removeItem('wa_notes'); localStorage.removeItem('wa_quick_replies'); } catch (e) {}
+		toast('Pengaturan dipulihkan. Memuat ulang…');
+		setTimeout(function () { location.reload(); }, 1200);
 	};
 
 	// ------------------------------------------------------------------
@@ -723,6 +751,8 @@
 
 		var updateCb = modal.querySelector('#wa-cc-update-cb');
 		var updateBtn = modal.querySelector('#wa-cc-update-btn');
+		var exportSetBtn = modal.querySelector('#wa-cc-export-settings-btn');
+		var importSetBtn = modal.querySelector('#wa-cc-import-settings-btn');
 		if (updateCb) updateCb.onchange = function () {
 			if (window.setUpdateCheckEnabled) window.setUpdateCheckEnabled(updateCb.checked);
 			toast(updateCb.checked ? 'Cek pembaruan otomatis: aktif' : 'Cek pembaruan otomatis: nonaktif');
@@ -732,6 +762,8 @@
 			if (status) status.textContent = 'Memeriksa GitHub…';
 			if (window.checkForUpdatesNow) window.checkForUpdatesNow();
 		};
+		if (exportSetBtn) exportSetBtn.onclick = function () { window.waExportSettings(); };
+		if (importSetBtn) importSetBtn.onclick = function () { window.waImportSettings(); };
 		if (dndEnd) dndEnd.onchange = saveDnd;
 		if (muteBtn) muteBtn.onclick = function () {
 			var name = openChatName();
