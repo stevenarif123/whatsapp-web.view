@@ -112,9 +112,10 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `tools/dev.ps1`, `tools/smoke.js` | Menjalankan salinan dev dengan DevTools dan uji asap end-to-end |
 | `vendor/github.com/jchv/go-webview2` | Library WebView2 (ditambah `SetContentBounds` untuk ukuran viewport, event unduhan `ICoreWebView2_4`, dan antrean `Dispatch` bersama agar webview Telegram yang tertanam juga menerima hasil binding) |
 | `app.manifest`, `resource.rc`, `icon.ico` | Manifest, resource, dan ikon Windows |
-| `assets/notif-telegram.png`, `tools/gen_telegram_icon.py` | Ikon notifikasi Telegram dan skrip pembuatnya |
+| `WhatsApp.svg.webp`, `assets/telegram-logo.png` | Logo resmi WhatsApp dan Telegram (sumber semua ikon) |
+| `tools/make_icons.py` | Membuat `icon.ico` (16–256 px) dan ikon notifikasi `assets/notif-*.png` dari logo resmi |
 
-`icon.ico` adalah ikon aplikasi dan notifikasi WhatsApp. Ikon ini ditanam ke exe lewat `rsrc.syso`; setelah mengganti `icon.ico`, buat ulang dengan `windres -O coff -i resource.rc -o rsrc.syso`.
+`icon.ico` adalah ikon aplikasi, jendela, dan tray. Semua ikon dibuat dari logo resmi dengan `python tools/make_icons.py` (butuh Pillow). Ikon ditanam ke exe lewat `rsrc.syso`; setelah mengganti `icon.ico`, buat ulang dengan `windres -O coff -i resource.rc -o rsrc.syso` (manifest ID 1, grup ikon ID 2).
 
 Untuk melihat perubahan tampilan Pusat Kontrol tanpa membangun aplikasi, jalankan `python -m http.server` di folder `assets` lalu buka `preview.html`.
 

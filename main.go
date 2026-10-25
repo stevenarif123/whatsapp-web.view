@@ -46,14 +46,19 @@ var notesJS string
 //go:embed assets/quickreplies.js
 var quickRepliesJS string
 
-// App icon (also the WhatsApp notification icon) and the Telegram notification icon. They are written
-// to the user config dir at startup so the app and its toasts do not depend on files next to the exe.
+// App icon and the toast icons, all made from the official logos by tools/make_icons.py. They are
+// written to the user config dir at startup so the app and its toasts do not depend on files next to the exe.
 //
 //go:embed icon.ico
 var appIconICO []byte
 
 //go:embed assets/notif-telegram.png
 var telegramNotifPNG []byte
+
+// Official WhatsApp logo for toasts (sharper than the .ico at notification size).
+//
+//go:embed assets/notif-whatsapp.png
+var whatsappNotifPNG []byte
 
 const (
 	waToastAppID = "WhatsApp Desktop"
@@ -1228,6 +1233,7 @@ func main() {
 	}
 	userDataDir := getUserDataDir(profileID)
 	iconFullPath := iconFile("icon.ico", appIconICO)
+	waNotifIcon := iconFile("notif-whatsapp.png", whatsappNotifPNG)
 
 	opts := webview2.WebViewOptions{
 		Window:    nil,
@@ -1290,7 +1296,7 @@ func main() {
 	origWndProc = setWindowLongPtr(hwnd, GWLP_WNDPROC, windows.NewCallback(customWndProc))
 
 	// Bind native notification bridge and notification settings
-	bindNotifications(w, "wa", waToastAppID, iconFullPath)
+	bindNotifications(w, "wa", waToastAppID, waNotifIcon)
 
 	// Bind external link handler (opens in system default browser)
 	_ = w.Bind("openExternalLink", func(rawURL string) {
@@ -1311,7 +1317,7 @@ func main() {
 
 	// Settings backup, reply reminders and the update check
 	bindBackup(w, hwnd)
-	bindReminders(w, iconFullPath)
+	bindReminders(w, waNotifIcon)
 	bindUpdates(w)
 
 	// Bind unread message counter
