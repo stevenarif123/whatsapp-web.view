@@ -1269,6 +1269,9 @@ func main() {
 	enableDownloads(w, hwnd)
 	bindNotes(w)
 
+	// Update check
+	bindUpdates(w)
+
 	// Bind unread message counter
 	_ = w.Bind("onUnreadCountChanged", func(count int) {
 		updateUnreadCount(count)

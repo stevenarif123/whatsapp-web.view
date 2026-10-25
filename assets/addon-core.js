@@ -626,6 +626,49 @@
 	};
 
 	// ------------------------------------------------------------------
+	// 4d. Update banner (Go: updater.go)
+	// ------------------------------------------------------------------
+	function showUpdateBanner(info) {
+		if (!info || !info.newer || !document.body) return;
+		var bar = document.getElementById('wa-update-banner');
+		if (!bar) {
+			bar = document.createElement('div');
+			bar.id = 'wa-update-banner';
+			bar.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483000;display:flex;align-items:center;gap:10px;' +
+				'background:var(--wa-bg-elevated,#182229);border:1px solid var(--wa-border-strong,rgba(134,150,160,.28));border-radius:10px;padding:8px 10px 8px 14px;' +
+				'box-shadow:0 10px 30px rgba(0,0,0,.55);font-family:var(--wa-font,Segoe UI,sans-serif);font-size:12.5px;color:var(--wa-text,#e9edef);';
+			bar.innerHTML = '<span class="wa-upd-text"></span>' +
+				'<button class="wa-btn wa-btn-primary wa-btn-sm wa-upd-get">Unduh</button>' +
+				'<button class="wa-btn wa-btn-secondary wa-btn-sm wa-upd-skip">Lewati versi ini</button>' +
+				'<button class="wa-close-btn wa-upd-close" title="Tutup" aria-label="Tutup" style="width:24px;height:24px;">✕</button>';
+			document.body.appendChild(bar);
+		}
+		bar.querySelector('.wa-upd-text').textContent = 'Versi baru ' + info.latest + ' tersedia (Anda memakai ' + info.current + ')';
+		bar.querySelector('.wa-upd-get').onclick = function () {
+			if (window.openExternalLink) window.openExternalLink(info.url);
+			bar.remove();
+		};
+		bar.querySelector('.wa-upd-skip').onclick = function () {
+			if (window.skipUpdateVersion) window.skipUpdateVersion(info.latest);
+			toast('Versi ' + info.latest + ' dilewati');
+			bar.remove();
+		};
+		bar.querySelector('.wa-upd-close').onclick = function () { bar.remove(); };
+	}
+	window.waUpdateAvailable = function (info) { whenDOMReady(function () { showUpdateBanner(info); }); };
+	// Result of "Cek pembaruan sekarang"
+	window.waUpdateResult = function (info) {
+		var status = document.getElementById('wa-update-status');
+		var msg;
+		if (info.error) msg = 'Gagal memeriksa: ' + info.error;
+		else if (info.newer) msg = 'Versi baru ' + info.latest + ' tersedia.';
+		else msg = 'Sudah versi terbaru (' + info.current + ').';
+		if (status) status.textContent = msg;
+		toast(msg);
+		if (info.newer && !info.error) showUpdateBanner(info);
+	};
+
+	// ------------------------------------------------------------------
 	// 5. Control Center wiring (called from main.go after the modal exists)
 	// ------------------------------------------------------------------
 	window.waBindCoreUI = function (modal) {
@@ -677,6 +720,18 @@
 			toast(dndCb.checked ? 'Jam tenang: aktif' : 'Jam tenang: nonaktif');
 		};
 		if (dndStart) dndStart.onchange = saveDnd;
+
+		var updateCb = modal.querySelector('#wa-cc-update-cb');
+		var updateBtn = modal.querySelector('#wa-cc-update-btn');
+		if (updateCb) updateCb.onchange = function () {
+			if (window.setUpdateCheckEnabled) window.setUpdateCheckEnabled(updateCb.checked);
+			toast(updateCb.checked ? 'Cek pembaruan otomatis: aktif' : 'Cek pembaruan otomatis: nonaktif');
+		};
+		if (updateBtn) updateBtn.onclick = function () {
+			var status = document.getElementById('wa-update-status');
+			if (status) status.textContent = 'Memeriksa GitHub…';
+			if (window.checkForUpdatesNow) window.checkForUpdatesNow();
+		};
 		if (dndEnd) dndEnd.onchange = saveDnd;
 		if (muteBtn) muteBtn.onclick = function () {
 			var name = openChatName();
@@ -711,6 +766,11 @@
 				if (dndStart) dndStart.value = s.dndStart || '22:00';
 				if (dndEnd) dndEnd.value = s.dndEnd || '07:00';
 				renderMuteList();
+			});
+			if (typeof window.getUpdateSettings === 'function') window.getUpdateSettings().then(function (u) {
+				var v = document.getElementById('wa-app-version');
+				if (v) v.textContent = 'v' + u.current;
+				if (updateCb) updateCb.checked = !!u.enabled;
 			});
 			refreshPins();
 		};
