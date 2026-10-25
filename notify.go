@@ -33,7 +33,7 @@ const (
 )
 
 var (
-	procRegCreateKeyEx          = advapi32.NewProc("RegCreateKeyExW")
+	procRegCreateKeyEx           = advapi32.NewProc("RegCreateKeyExW")
 	procAllowSetForegroundWindow = user32.NewProc("AllowSetForegroundWindow")
 )
 
@@ -167,26 +167,37 @@ func showNativeNotification(app, appID, title, message, iconPath string, id int)
 	if inQuietHours(s, time.Now()) || isMuted(s, title) {
 		return
 	}
+	var actions []toast.Action
+	if id > 0 && title != "" {
+		actions = []toast.Action{
+			{Type: "protocol", Label: "Bisukan chat ini", Arguments: activationURI("mute", app, id, title)},
+		}
+	}
+	pushToast(app, appID, title, message, iconPath, activationURI("open", app, id, title), actions)
+}
+
+// pushToast shows a toast that opens launchURI when clicked. It ignores quiet hours and muted chats.
+func pushToast(app, appID, title, message, iconPath, launchURI string, actions []toast.Action) {
 	title = sanitizeNotificationText(title, 128)
 	message = sanitizeNotificationText(message, 512)
 	if title == "" && message == "" {
 		return
 	}
-
 	notification := toast.Notification{
 		AppID:               appID,
 		Title:               title,
 		Message:             message,
 		Icon:                iconPath,
 		ActivationType:      "protocol",
-		ActivationArguments: activationURI("open", app, id, title),
-	}
-	if id > 0 && title != "" {
-		notification.Actions = []toast.Action{
-			{Type: "protocol", Label: "Bisukan chat ini", Arguments: activationURI("mute", app, id, title)},
-		}
+		ActivationArguments: launchURI,
+		Actions:             actions,
 	}
 	_ = notification.Push()
+}
+
+// activationChatURI opens a WhatsApp chat by name (used by reminders, which have no page notification).
+func activationChatURI(chat string) string {
+	return activationURI("chat", "wa", 0, chat)
 }
 
 // bindNotifications exposes the toast bridge and the notification settings to a page.
@@ -298,6 +309,12 @@ func handleActivation(uri string) {
 		procSetFgWindow.Call(globalHwnd)
 		if target != nil && id > 0 {
 			target.Eval(fmt.Sprintf("window.waNotificationClicked && window.waNotificationClicked(%d, %s)", id, jsString(chat)))
+		}
+	case "chat":
+		switchToWhatsApp()
+		procSetFgWindow.Call(globalHwnd)
+		if globalWebView != nil && chat != "" {
+			globalWebView.Eval(fmt.Sprintf("window.waOpenChatByName && window.waOpenChatByName(%s)", jsString(chat)))
 		}
 	case "mute":
 		if chat == "" {

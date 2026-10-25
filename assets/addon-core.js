@@ -626,7 +626,7 @@
 	};
 
 	// ------------------------------------------------------------------
-	// 4d. Update banner, settings backup (Go: updater.go, backup.go)
+	// 4d. Update banner, settings backup, reply reminders (Go: updater.go, backup.go, reminders.go)
 	// ------------------------------------------------------------------
 	function showUpdateBanner(info) {
 		if (!info || !info.newer || !document.body) return;
@@ -696,6 +696,124 @@
 		setTimeout(function () { location.reload(); }, 1200);
 	};
 
+	// Reply reminders
+	var reminderCache = [];
+	function formatDue(ts) {
+		var d = new Date(ts * 1000), now = new Date();
+		var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+		var time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+		if (d.toDateString() === now.toDateString()) return 'Hari ini ' + time;
+		if (d.toDateString() === tomorrow.toDateString()) return 'Besok ' + time;
+		return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }) + ' ' + time;
+	}
+	function renderReminderList() {
+		var list = document.getElementById('wa-remind-list');
+		var c = document.getElementById('wa-remind-count');
+		if (c) c.textContent = String(reminderCache.length);
+		if (!list) return;
+		list.innerHTML = '';
+		reminderCache.forEach(function (r) {
+			var row = document.createElement('div');
+			row.className = 'wa-row';
+			row.innerHTML = '<div class="wa-row-text" style="min-width:0;"><div class="wa-row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div><div class="wa-row-desc"></div></div>' +
+				'<button class="wa-btn wa-btn-secondary wa-btn-sm">Hapus</button>';
+			row.querySelector('.wa-row-title').textContent = r.chat;
+			row.querySelector('.wa-row-desc').textContent = formatDue(r.due) + (r.note ? ' • ' + r.note : '');
+			row.lastChild.onclick = function () {
+				window.deleteReminder(r.id).then(function (l) { reminderCache = l || []; renderReminderList(); });
+			};
+			list.appendChild(row);
+		});
+	}
+	function loadReminders() {
+		if (typeof window.listReminders !== 'function') return;
+		window.listReminders().then(function (l) { reminderCache = l || []; renderReminderList(); });
+	}
+	// Called from Go after a reminder fired
+	window.waRemindersChanged = function (l) { reminderCache = l || []; renderReminderList(); };
+
+	function createReminderModal() {
+		var modal = document.getElementById('wa-remind-modal');
+		if (modal) return modal;
+		modal = document.createElement('div');
+		modal.id = 'wa-remind-modal';
+		modal.className = 'wa-modal-backdrop';
+		modal.innerHTML = '<div class="wa-modal-box" style="width:360px;padding:22px 22px 18px;">' +
+			'<h3 style="margin:0 0 2px 0;font-size:16px;font-weight:600;color:var(--wa-text);">Ingatkan saya membalas</h3>' +
+			'<p id="wa-remind-chat" style="margin:0 0 14px 0;font-size:12.5px;color:var(--wa-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></p>' +
+			'<div class="wa-btn-grid" style="margin-bottom:10px;">' +
+			'<button class="wa-btn wa-btn-secondary" data-min="30">30 menit</button>' +
+			'<button class="wa-btn wa-btn-secondary" data-min="60">1 jam</button>' +
+			'<button class="wa-btn wa-btn-secondary" data-min="180">3 jam</button>' +
+			'<button class="wa-btn wa-btn-secondary" data-tomorrow="9">Besok 09.00</button>' +
+			'</div>' +
+			'<label style="font-size:11px;color:var(--wa-text-muted);display:block;margin-bottom:4px;">Atau pilih waktu:</label>' +
+			'<input id="wa-remind-at" class="wa-input" type="datetime-local" style="width:100%;margin-bottom:10px;">' +
+			'<input id="wa-remind-note" class="wa-input" type="text" maxlength="300" placeholder="Catatan (opsional), misalnya: kirim invoice" style="width:100%;margin-bottom:8px;">' +
+			'<div id="wa-remind-error" style="color:var(--wa-danger);font-size:12px;min-height:16px;margin-bottom:8px;"></div>' +
+			'<div style="display:flex;gap:8px;">' +
+			'<button id="wa-remind-cancel" class="wa-btn wa-btn-secondary" style="flex:1;">Batal</button>' +
+			'<button id="wa-remind-save" class="wa-btn wa-btn-primary" style="flex:1;">Simpan waktu pilihan</button>' +
+			'</div></div>';
+		document.body.appendChild(modal);
+
+		function close() { modal.style.display = 'none'; }
+		function save(due) {
+			var err = modal.querySelector('#wa-remind-error');
+			var note = modal.querySelector('#wa-remind-note').value;
+			window.addReminder(modal._chat, note, Math.floor(due / 1000)).then(function (r) {
+				if (!r.ok) { err.textContent = r.error || 'Gagal menyimpan'; return; }
+				reminderCache = r.list || [];
+				renderReminderList();
+				close();
+				toast('⏰ Pengingat: ' + formatDue(Math.floor(due / 1000)));
+			});
+		}
+		Array.prototype.forEach.call(modal.querySelectorAll('[data-min]'), function (b) {
+			b.onclick = function () { save(Date.now() + parseInt(b.getAttribute('data-min'), 10) * 60000); };
+		});
+		modal.querySelector('[data-tomorrow]').onclick = function () {
+			var d = new Date();
+			d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 9, 0, 0);
+			save(d.getTime());
+		};
+		modal.querySelector('#wa-remind-save').onclick = function () {
+			var v = modal.querySelector('#wa-remind-at').value;
+			var t = v ? new Date(v).getTime() : NaN;
+			if (!(t > Date.now())) { modal.querySelector('#wa-remind-error').textContent = 'Pilih waktu yang akan datang'; return; }
+			save(t);
+		};
+		modal.querySelector('#wa-remind-cancel').onclick = close;
+		modal.onclick = function (e) { if (e.target === modal) close(); };
+		Array.prototype.forEach.call(modal.querySelectorAll('input'), function (inp) {
+			['keydown', 'keyup', 'keypress', 'input'].forEach(function (n) { inp.addEventListener(n, function (e) { e.stopPropagation(); }); });
+			inp.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+		});
+		return modal;
+	}
+
+	window.waOpenReminder = function () {
+		var chat = openChatName();
+		if (!chat) { toast('Buka sebuah chat dulu'); return; }
+		if (typeof window.addReminder !== 'function') return;
+		var modal = createReminderModal();
+		modal._chat = chat;
+		modal.querySelector('#wa-remind-chat').textContent = chat;
+		modal.querySelector('#wa-remind-note').value = '';
+		modal.querySelector('#wa-remind-error').textContent = '';
+		var d = new Date(Date.now() + 3600000);
+		d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+		modal.querySelector('#wa-remind-at').value = d.toISOString().slice(0, 16);
+		modal.style.display = 'flex';
+	};
+
+	window.addEventListener('keydown', function (e) {
+		if (e.altKey && !e.ctrlKey && (e.code === 'KeyR' || e.key === 'r' || e.key === 'R')) {
+			e.preventDefault(); e.stopPropagation();
+			window.waOpenReminder();
+		}
+	}, true);
+
 	// ------------------------------------------------------------------
 	// 5. Control Center wiring (called from main.go after the modal exists)
 	// ------------------------------------------------------------------
@@ -753,6 +871,7 @@
 		var updateBtn = modal.querySelector('#wa-cc-update-btn');
 		var exportSetBtn = modal.querySelector('#wa-cc-export-settings-btn');
 		var importSetBtn = modal.querySelector('#wa-cc-import-settings-btn');
+		var remindBtn = modal.querySelector('#wa-cc-remind-btn');
 		if (updateCb) updateCb.onchange = function () {
 			if (window.setUpdateCheckEnabled) window.setUpdateCheckEnabled(updateCb.checked);
 			toast(updateCb.checked ? 'Cek pembaruan otomatis: aktif' : 'Cek pembaruan otomatis: nonaktif');
@@ -764,6 +883,10 @@
 		};
 		if (exportSetBtn) exportSetBtn.onclick = function () { window.waExportSettings(); };
 		if (importSetBtn) importSetBtn.onclick = function () { window.waImportSettings(); };
+		if (remindBtn) remindBtn.onclick = function () {
+			modal.style.display = 'none';
+			window.waOpenReminder();
+		};
 		if (dndEnd) dndEnd.onchange = saveDnd;
 		if (muteBtn) muteBtn.onclick = function () {
 			var name = openChatName();
@@ -799,6 +922,7 @@
 				if (dndEnd) dndEnd.value = s.dndEnd || '07:00';
 				renderMuteList();
 			});
+			loadReminders();
 			if (typeof window.getUpdateSettings === 'function') window.getUpdateSettings().then(function (u) {
 				var v = document.getElementById('wa-app-version');
 				if (v) v.textContent = 'v' + u.current;

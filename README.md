@@ -21,6 +21,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **Filter chat belum dibaca**: memakai chip "Belum dibaca" bawaan WhatsApp.
 - **Radar online**: toast dan notifikasi Windows saat kontak di chat yang sedang terbuka menjadi online atau mulai mengetik. Bisa dibatasi ke nama tertentu. *Catatan: WhatsApp hanya mengirim status online untuk chat yang sedang Anda buka, dan hanya jika kontak mengizinkannya.*
 - **Balasan cepat**: buat pintasan seperti `/toko`, ketik di chat, lalu tekan Tab, Enter, atau Spasi untuk mengembangkannya. Teks bisa memakai variabel `{nama}` (nama chat), `{depan}`, `{tanggal}`, `{hari}`, dan `{jam}`. Daftarnya sama di WhatsApp dan Telegram.
+- **Pengingat balas** (`Alt + R` atau tombol Ingatkan di dock): pilih 30 menit, 1 jam, 3 jam, besok 09.00, atau waktu sendiri, plus catatan opsional. Pada waktunya muncul notifikasi; klik untuk langsung membuka chatnya. Pengingat yang terlewat saat aplikasi tertutup muncul begitu aplikasi dibuka. Semuanya tersimpan di komputer ini, tidak ada yang dikirim ke WhatsApp.
 - **Ekspor chat**: simpan pesan yang sudah termuat di chat terbuka sebagai berkas `.txt`.
 - **Chat ke nomor baru** (`Ctrl + N`): tanpa menyimpan kontak. `0812…` otomatis menjadi `62812…`.
 - **Catatan** (`Alt + N`): panel samping dengan banyak catatan, pencarian, dan simpan otomatis. Catatan yang sama muncul di WhatsApp dan Telegram.
@@ -63,6 +64,7 @@ Fitur berikut **tidak ada** di aplikasi ini: menyembunyikan centang biru, anti-h
 | `Alt + M` | Buka Pusat Kontrol |
 | `Alt + P` | Mode Privasi on / off |
 | `Alt + N` | Catatan tempel |
+| `Alt + R` | Pengingat balas untuk chat yang terbuka |
 | `Alt + V` | Picture-in-Picture video |
 | `Ctrl + N` | Chat ke nomor baru |
 | `Ctrl + L` | Kunci aplikasi |
@@ -98,6 +100,7 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `notes.go` | Penyimpanan bersama WhatsApp & Telegram: catatan dan balasan cepat |
 | `updater.go` | Cek pembaruan harian ke GitHub Releases |
 | `backup.go` | Ekspor & impor pengaturan |
+| `reminders.go` | Pengingat balas |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
 | `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |

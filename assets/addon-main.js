@@ -2096,6 +2096,11 @@
 						'<button id="wa-tab-split" class="wa-dock-item" title="Mode Berdampingan 50:50 (Ctrl+3)">' +
 							'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="12" y1="3" x2="12" y2="21"/></svg>' +
 							'<span>Berdampingan</span>' +
+						'</button>',
+						'<div class="wa-dock-sep"></div>',
+						'<button id="wa-tab-remind" class="wa-dock-item" title="Ingatkan saya membalas chat ini (Alt+R)">' +
+							'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><polyline points="12 9 12 13 14.5 15"/><line x1="5" y1="3" x2="2" y2="6"/><line x1="19" y1="3" x2="22" y2="6"/></svg>' +
+							'<span>Ingatkan</span>' +
 						'</button>'
 					].join('');
 
@@ -2114,6 +2119,15 @@
 					var btnWA = dock.querySelector('#wa-tab-wa');
 					var btnTG = dock.querySelector('#wa-tab-tg');
 					var btnSplit = dock.querySelector('#wa-tab-split');
+					var btnRemind = dock.querySelector('#wa-tab-remind');
+
+					if (btnRemind) {
+						btnRemind.onclick = function(e) {
+							e.preventDefault();
+							e.stopPropagation();
+							if (window.waOpenReminder) window.waOpenReminder();
+						};
+					}
 
 					if (btnCC) {
 						btnCC.onclick = function(e) {
