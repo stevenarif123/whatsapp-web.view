@@ -673,43 +673,6 @@ func updateUnreadCount(count int) {
 }
 
 
-var (
-	cachedAppPin = "1234"
-)
-
-func getPinFilePath() string {
-	configDir, err := os.UserConfigDir()
-	if err != nil {
-		configDir = os.Getenv("APPDATA")
-		if configDir == "" {
-			configDir = "."
-		}
-	}
-	base := filepath.Join(configDir, "WhatsAppDesktopLight")
-	_ = os.MkdirAll(base, 0755)
-	return filepath.Join(base, "app_pin.dat")
-}
-
-func loadSharedPin() string {
-	p := getPinFilePath()
-	if data, err := os.ReadFile(p); err == nil {
-		val := strings.TrimSpace(string(data))
-		if len(val) >= 4 && len(val) <= 6 {
-			cachedAppPin = val
-		}
-	}
-	return cachedAppPin
-}
-
-func saveSharedPin(pin string) {
-	pin = strings.TrimSpace(pin)
-	if len(pin) >= 4 && len(pin) <= 6 {
-		cachedAppPin = pin
-		p := getPinFilePath()
-		_ = os.WriteFile(p, []byte(pin), 0600)
-	}
-}
-
 func getUserDataDir(profile string) string {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
@@ -818,18 +781,7 @@ func initTelegramChild() {
 	_ = w.Bind("switchToSplitView", func() {
 		switchToSplitView()
 	})
-	_ = w.Bind("getAppPin", func() string {
-		return loadSharedPin()
-	})
-	_ = w.Bind("syncAppPin", func(pin string) {
-		saveSharedPin(pin)
-		if globalWebView != nil {
-			globalWebView.Eval(fmt.Sprintf("if(window.updateStoredPin) window.updateStoredPin(%q);", pin))
-		}
-		if globalTelegramWebView != nil {
-			globalTelegramWebView.Eval(fmt.Sprintf("if(window.updateStoredPin) window.updateStoredPin(%q);", pin))
-		}
-	})
+	bindPinLock(w)
 
 	w.Init(telegramInitScript)
 	w.Navigate(telegramAppURL)
@@ -1071,12 +1023,7 @@ func runTelegramWindow(userDataDir string, startMinimized bool) {
 	_ = w.Bind("openSideBySideView", func() {
 		arrangeSideBySide()
 	})
-	_ = w.Bind("getAppPin", func() string {
-		return loadSharedPin()
-	})
-	_ = w.Bind("syncAppPin", func(pin string) {
-		saveSharedPin(pin)
-	})
+	bindPinLock(w)
 
 	w.Init(telegramInitScript)
 	w.Navigate(telegramAppURL)
@@ -1316,18 +1263,7 @@ func main() {
 	_ = w.Bind("switchToSplitView", func() {
 		switchToSplitView()
 	})
-	_ = w.Bind("getAppPin", func() string {
-		return loadSharedPin()
-	})
-	_ = w.Bind("syncAppPin", func(pin string) {
-		saveSharedPin(pin)
-		if globalWebView != nil {
-			globalWebView.Eval(fmt.Sprintf("if(window.updateStoredPin) window.updateStoredPin(%q);", pin))
-		}
-		if globalTelegramWebView != nil {
-			globalTelegramWebView.Eval(fmt.Sprintf("if(window.updateStoredPin) window.updateStoredPin(%q);", pin))
-		}
-	})
+	bindPinLock(w)
 
 	// Injected JavaScript: User-Agent, Notification Polyfill, Link Isolation, Privacy Mode, and Unread Message Observer
 	initScript := "var WA_ADDON_CSS = " + jsString(addonCSS) + ";\nvar WA_CC_HTML = " + jsString(controlCenterHTML) + ";\n" +

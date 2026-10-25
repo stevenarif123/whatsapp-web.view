@@ -538,7 +538,7 @@
 
 	// Called from Go when the window is hidden to the tray or via the Boss Key.
 	window.waOnHidden = function () {
-		if (loadJSON('wa_lock_on_hide', false) && typeof window.lockWhatsApp === 'function') window.lockWhatsApp();
+		if (loadJSON('wa_lock_on_hide', false) && typeof window.lockWhatsApp === 'function') window.lockWhatsApp('auto');
 	};
 
 	// Builds a plain-text transcript of the messages currently rendered in the open chat.

@@ -12,7 +12,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 ### Privasi
 - **Mode Privasi / blur layar** (`Alt + P`): buramkan nama kontak, pratinjau pesan, balon obrolan, foto & video, dan foto profil. Intensitas Halus / Sedang / Kuat. Arahkan kursor untuk mengintip.
 - **Screenshot Anonim**: samarkan nama dan foto profil dengan satu klik sebelum mengambil tangkapan layar.
-- **Kunci Aplikasi** (`Ctrl + L`): kunci dengan PIN (awal: `1234`), terkunci otomatis setelah 5 menit tidak aktif. PIN bisa diganti dari Pusat Kontrol, layar kunci, atau menu tray.
+- **Kunci Aplikasi** (`Ctrl + L`): kunci dengan PIN, terkunci otomatis setelah 5 menit tidak aktif. Saat pertama mengunci Anda diminta membuat PIN sendiri (PIN bawaan `1234` tidak bisa dipakai untuk mengunci). PIN disimpan sebagai hash PBKDF2 dan tidak pernah dikirim ke halaman; setelah 5 PIN salah percobaan dijeda (30 detik, makin lama hingga 15 menit), juga setelah aplikasi dibuka ulang. PIN bisa diganti dari Pusat Kontrol, layar kunci, atau menu tray.
 - **Boss Key global** (`Ctrl + Alt + W`): sembunyikan atau munculkan jendela dari aplikasi mana pun.
 
 ### Chat & Alat
@@ -88,6 +88,7 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | :--- | :--- |
 | `main.go` | Jendela WebView2, tray, hotkey, profil, tata letak WhatsApp/Telegram |
 | `badge_windows.go` | Badge angka di tombol taskbar (ITaskbarList3) |
+| `pinlock.go` | PIN kunci aplikasi: hash PBKDF2, hitungan PIN salah, dan jeda |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
 | `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |

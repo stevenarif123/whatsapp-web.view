@@ -1447,28 +1447,63 @@
 		})();
 
 		// Feature: App Lock with PIN (Ctrl + L & 5-minute Inactivity Auto-Lock)
-		var storedPin = '1234';
+		// The PIN is checked by Go (hashed, with a lockout after repeated wrong PINs); this page never sees it.
 		(function() {
 			if (window.self !== window.top) return;
 
 			var isLocked = false;
 			try {
-				storedPin = localStorage.getItem('wa_app_pin') || '1234';
 				isLocked = localStorage.getItem('wa_is_locked') === 'true';
+				localStorage.removeItem('wa_app_pin'); // left over from when the PIN was kept in the page
 			} catch(e) {}
 
-			window.updateStoredPin = function(pin) {
-				if (pin && pin.length >= 4) {
-					storedPin = pin;
-					try { localStorage.setItem('wa_app_pin', pin); } catch(e) {}
-				}
-			};
-			if (window.getAppPin) {
-				window.getAppPin().then(function(p) {
-					if (p && p.length >= 4) {
-						window.updateStoredPin(p);
+			// Latest status from Go: { isDefault, length, wait, remaining }. null until the first answer.
+			var pinInfo = null;
+			function refreshPinInfo() {
+				if (!window.getAppPinStatus) return Promise.resolve(null);
+				return window.getAppPinStatus().then(function(st) {
+					pinInfo = st;
+					updatePinHints();
+					if (st && st.wait > 0) showLockoutCountdown(st.wait);
+					return st;
+				}).catch(function() { return null; });
+			}
+			window.onAppPinChanged = refreshPinInfo;
+			refreshPinInfo();
+
+			function updatePinHints() {
+				var hint = document.getElementById('wa-pin-hint');
+				if (hint) hint.textContent = pinInfo && pinInfo.isDefault ? 'PIN awal: 1234 • Ctrl+L untuk mengunci' : 'Ctrl+L untuk mengunci';
+			}
+
+			function formatWait(s) {
+				return s >= 60 ? Math.floor(s / 60) + ' mnt ' + (s % 60) + ' dtk' : s + ' dtk';
+			}
+
+			var countdownTimer = null;
+			function showLockoutCountdown(seconds) {
+				var input = document.getElementById('wa-pin-input');
+				var btn = document.getElementById('wa-pin-unlock-btn');
+				var errEl = document.getElementById('wa-pin-error');
+				if (!input || !errEl) return;
+				clearInterval(countdownTimer);
+				var left = seconds;
+				function tick() {
+					if (left <= 0) {
+						clearInterval(countdownTimer);
+						input.disabled = false;
+						if (btn) btn.disabled = false;
+						errEl.textContent = '';
+						input.focus();
+						return;
 					}
-				});
+					input.disabled = true;
+					if (btn) btn.disabled = true;
+					errEl.textContent = 'Terlalu banyak PIN salah. Coba lagi dalam ' + formatWait(left) + '.';
+					left--;
+				}
+				tick();
+				countdownTimer = setInterval(tick, 1000);
 			}
 
 			var inactivityTimer = null;
@@ -1477,7 +1512,7 @@
 			function resetInactivityTimer() {
 				clearTimeout(inactivityTimer);
 				inactivityTimer = setTimeout(function() {
-					window.lockWhatsApp();
+					window.lockWhatsApp('auto');
 				}, INACTIVITY_TIMEOUT);
 			}
 
@@ -1500,10 +1535,10 @@
 					'</div>' +
 					'<h2 style="margin:0 0 4px 0;font-size:18px;font-weight:600;color:var(--wa-text);">WhatsApp Terkunci</h2>' +
 					'<p style="margin:0 0 18px 0;font-size:12.5px;color:var(--wa-text-muted);">Masukkan PIN untuk membuka akses</p>' +
-					'<input id="wa-pin-input" class="wa-input" type="password" maxlength="6" style="width:180px;height:42px;text-align:center;font-size:22px;letter-spacing:8px;margin-bottom:12px;">' +
+					'<input id="wa-pin-input" class="wa-input" type="password" inputmode="numeric" maxlength="6" style="width:180px;height:42px;text-align:center;font-size:22px;letter-spacing:8px;margin-bottom:12px;">' +
 					'<div id="wa-pin-error" style="color:var(--wa-danger);font-size:12px;min-height:18px;margin-bottom:10px;"></div>' +
 					'<button id="wa-pin-unlock-btn" class="wa-btn wa-btn-primary" style="width:100%;height:38px;font-size:13px;margin-bottom:12px;">Buka Kunci</button>' +
-					'<div style="font-size:11px;color:var(--wa-text-dim);">Default: 1234 • Ctrl+L untuk mengunci</div>' +
+					'<div id="wa-pin-hint" style="font-size:11px;color:var(--wa-text-dim);">Ctrl+L untuk mengunci</div>' +
 					'<div style="margin-top:10px;"><a id="wa-pin-change-link" href="javascript:void(0)" style="color:var(--wa-primary);font-size:12px;text-decoration:none;font-weight:500;">Ganti / Ubah PIN</a></div>' +
 					'<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);width:100%;display:flex;gap:6px;justify-content:center;">' +
 					'  <button id="wa-lock-btn-tg" class="wa-btn wa-btn-secondary" style="font-size:11px;padding:5px 12px;border-radius:14px;color:#24A1DE;border-color:rgba(36,161,222,0.3);">' +
@@ -1512,6 +1547,7 @@
 					'</div>' +
 					'</div>';
 				document.body.appendChild(overlay);
+				updatePinHints();
 
 				var btnLockTG = overlay.querySelector('#wa-lock-btn-tg');
 				if (btnLockTG) {
@@ -1535,20 +1571,35 @@
 					};
 				}
 
+				var verifying = false;
 				function unlock() {
-					var val = pinInput.value;
-					if (val === storedPin) {
-						overlay.style.display = 'none';
+					var val = (pinInput.value || '').trim();
+					if (verifying || !val || !window.verifyAppPin) return;
+					verifying = true;
+					window.verifyAppPin(val).then(function(st) {
+						verifying = false;
+						pinInfo = st;
+						if (st.ok) {
+							overlay.style.display = 'none';
+							pinInput.value = '';
+							errEl.textContent = '';
+							try { localStorage.setItem('wa_is_locked', 'false'); } catch(e) {}
+							showAddonToast('🔓 WhatsApp terbuka');
+							resetInactivityTimer();
+							if (st.isDefault) window.openChangePinModal({ forced: true });
+							return;
+						}
 						pinInput.value = '';
-						errEl.textContent = '';
-						try { localStorage.setItem('wa_is_locked', 'false'); } catch(e) {}
-						showAddonToast('🔓 WhatsApp terbuka');
-						resetInactivityTimer();
-					} else {
-						errEl.textContent = 'PIN salah! Coba lagi.';
-						pinInput.value = '';
+						if (st.wait > 0) {
+							showLockoutCountdown(st.wait);
+							return;
+						}
+						errEl.textContent = 'PIN salah! Sisa ' + st.remaining + ' percobaan sebelum dijeda.';
 						pinInput.focus();
-					}
+					}).catch(function() {
+						verifying = false;
+						errEl.textContent = 'Gagal memeriksa PIN. Coba lagi.';
+					});
 				}
 
 				if (unlockBtn) unlockBtn.onclick = unlock;
@@ -1585,9 +1636,10 @@
 							if (e.stopPropagation) e.stopPropagation();
 						});
 					});
+					// Submit as soon as the PIN has its full length, so Enter is optional
 					pinInput.addEventListener('input', function(e) {
 						var current = (pinInput.value || '').trim();
-						if (current.length >= 4 && current === storedPin) {
+						if (pinInfo && pinInfo.length && current.length === pinInfo.length) {
 							unlock();
 						}
 					});
@@ -1595,6 +1647,9 @@
 
 				return overlay;
 			}
+
+			// Options for the open change-PIN modal: forced (cannot be cancelled), thenLock (lock after saving)
+			var changeOpts = {};
 
 			function createChangePinModal() {
 				var existing = document.getElementById('wa-change-pin-modal');
@@ -1607,19 +1662,19 @@
 					'<div class="wa-header-icon" style="width:40px;height:40px;border-radius:50%;margin:0 auto 12px auto;">' +
 					'  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-1.5 1.5L10 13l-4 1 1-4 7.5-7.5m1.5-1.5l2-2"/><circle cx="7.5" cy="16.5" r="3.5"/></svg>' +
 					'</div>' +
-					'<h3 style="margin:0 0 4px 0;font-size:16px;font-weight:600;color:var(--wa-text);">Ubah PIN WhatsApp</h3>' +
-					'<p style="margin:0 0 16px 0;font-size:12px;color:var(--wa-text-muted);">Tentukan 4-6 angka PIN keamanan Anda</p>' +
-					'<div style="text-align:left;margin-bottom:10px;">' +
-					'<label style="font-size:11px;color:var(--wa-text-muted);display:block;margin-bottom:4px;">PIN Saat Ini (Default: 1234):</label>' +
-					'<input id="wa-cp-old" class="wa-input" type="password" maxlength="6" placeholder="PIN Lama" style="width:100%;">' +
+					'<h3 id="wa-cp-title" style="margin:0 0 4px 0;font-size:16px;font-weight:600;color:var(--wa-text);">Ubah PIN WhatsApp</h3>' +
+					'<p id="wa-cp-desc" style="margin:0 0 16px 0;font-size:12px;color:var(--wa-text-muted);">Tentukan 4-6 angka PIN keamanan Anda</p>' +
+					'<div id="wa-cp-old-row" style="text-align:left;margin-bottom:10px;">' +
+					'<label style="font-size:11px;color:var(--wa-text-muted);display:block;margin-bottom:4px;">PIN Saat Ini:</label>' +
+					'<input id="wa-cp-old" class="wa-input" type="password" inputmode="numeric" maxlength="6" placeholder="PIN Lama" style="width:100%;">' +
 					'</div>' +
 					'<div style="text-align:left;margin-bottom:10px;">' +
 					'<label style="font-size:11px;color:var(--wa-text-muted);display:block;margin-bottom:4px;">PIN Baru (4-6 angka):</label>' +
-					'<input id="wa-cp-new" class="wa-input" type="password" maxlength="6" placeholder="PIN Baru" style="width:100%;">' +
+					'<input id="wa-cp-new" class="wa-input" type="password" inputmode="numeric" maxlength="6" placeholder="PIN Baru" style="width:100%;">' +
 					'</div>' +
 					'<div style="text-align:left;margin-bottom:12px;">' +
 					'<label style="font-size:11px;color:var(--wa-text-muted);display:block;margin-bottom:4px;">Konfirmasi PIN Baru:</label>' +
-					'<input id="wa-cp-confirm" class="wa-input" type="password" maxlength="6" placeholder="Ulangi PIN Baru" style="width:100%;">' +
+					'<input id="wa-cp-confirm" class="wa-input" type="password" inputmode="numeric" maxlength="6" placeholder="Ulangi PIN Baru" style="width:100%;">' +
 					'</div>' +
 					'<div id="wa-cp-error" style="color:var(--wa-danger);font-size:12px;min-height:16px;margin-bottom:12px;"></div>' +
 					'<div style="display:flex;gap:8px;">' +
@@ -1635,14 +1690,21 @@
 				var cancelBtn = document.getElementById('wa-cp-cancel-btn');
 				var saveBtn = document.getElementById('wa-cp-save-btn');
 
-				function save() {
-					var oldVal = oldInput ? oldInput.value : '';
-					var newVal = newInput ? newInput.value : '';
-					var confirmVal = confirmInput ? confirmInput.value : '';
+				function close() {
+					if (changeOpts.forced) return;
+					modal.style.display = 'none';
+				}
 
-					if (oldVal !== storedPin) {
-						errEl.textContent = 'PIN lama salah!';
-						if (oldInput) { oldInput.value = ''; oldInput.focus(); }
+				var saving = false;
+				function save() {
+					var needOld = !(pinInfo && pinInfo.isDefault);
+					var oldVal = oldInput ? oldInput.value.trim() : '';
+					var newVal = newInput ? newInput.value.trim() : '';
+					var confirmVal = confirmInput ? confirmInput.value.trim() : '';
+
+					if (needOld && !oldVal) {
+						errEl.textContent = 'Masukkan PIN lama!';
+						if (oldInput) oldInput.focus();
 						return;
 					}
 					if (!/^\d{4,6}$/.test(newVal)) {
@@ -1650,27 +1712,51 @@
 						if (newInput) newInput.focus();
 						return;
 					}
+					if (newVal === '1234') {
+						errEl.textContent = 'Jangan pakai 1234, pilih PIN lain!';
+						if (newInput) { newInput.value = ''; newInput.focus(); }
+						return;
+					}
 					if (newVal !== confirmVal) {
 						errEl.textContent = 'Konfirmasi PIN tidak cocok!';
 						if (confirmInput) { confirmInput.value = ''; confirmInput.focus(); }
 						return;
 					}
+					if (saving || !window.changeAppPin) return;
+					saving = true;
 
-					storedPin = newVal;
-					try { localStorage.setItem('wa_app_pin', newVal); } catch(e) {}
-					if (window.syncAppPin) {
-						window.syncAppPin(newVal);
-					}
-					modal.style.display = 'none';
-					oldInput.value = '';
-					newInput.value = '';
-					confirmInput.value = '';
-					errEl.textContent = '';
-					showAddonToast('✅ PIN berhasil diubah!');
+					window.changeAppPin(needOld ? oldVal : '', newVal).then(function(st) {
+						saving = false;
+						pinInfo = st;
+						if (!st.ok) {
+							if (st.wait > 0) {
+								errEl.textContent = 'Terlalu banyak PIN salah. Coba lagi dalam ' + formatWait(st.wait) + '.';
+							} else if (st.error === 'wrong') {
+								errEl.textContent = 'PIN lama salah! Sisa ' + st.remaining + ' percobaan sebelum dijeda.';
+							} else {
+								errEl.textContent = 'Gagal menyimpan PIN. Coba lagi.';
+							}
+							if (oldInput) { oldInput.value = ''; oldInput.focus(); }
+							return;
+						}
+						var thenLock = changeOpts.thenLock;
+						changeOpts = {};
+						modal.style.display = 'none';
+						oldInput.value = '';
+						newInput.value = '';
+						confirmInput.value = '';
+						errEl.textContent = '';
+						updatePinHints();
+						showAddonToast('✅ PIN berhasil diubah!');
+						if (thenLock) window.lockWhatsApp();
+					}).catch(function() {
+						saving = false;
+						errEl.textContent = 'Gagal menyimpan PIN. Coba lagi.';
+					});
 				}
 
 				if (saveBtn) saveBtn.onclick = save;
-				if (cancelBtn) cancelBtn.onclick = function() { modal.style.display = 'none'; };
+				if (cancelBtn) cancelBtn.onclick = close;
 				[oldInput, newInput, confirmInput].forEach(function(inp) {
 					if (inp) {
 						['keydown', 'keyup', 'keypress', 'input'].forEach(function(evtName) {
@@ -1685,7 +1771,7 @@
 							}
 							if (e.key === 'Escape') {
 								if (e.preventDefault) e.preventDefault();
-								modal.style.display = 'none';
+								close();
 							}
 						});
 					}
@@ -1694,23 +1780,46 @@
 				return modal;
 			}
 
-			window.openChangePinModal = function() {
+			// opts.forced: right after unlocking with the default PIN, a new PIN must be set before continuing.
+			// opts.thenLock: the user asked to lock while the default PIN was still set; lock once a PIN exists.
+			window.openChangePinModal = function(opts) {
+				changeOpts = opts || {};
 				whenDOMReady(function() {
 					var modal = createChangePinModal();
-					if (modal) {
-						modal.style.display = 'flex';
-						var oldInput = document.getElementById('wa-cp-old');
-						var errEl = document.getElementById('wa-cp-error');
-						if (errEl) errEl.textContent = '';
-						if (oldInput) {
-							oldInput.value = '';
-							setTimeout(function() { oldInput.focus(); }, 50);
-						}
-					}
+					if (!modal) return;
+					var isDefault = !!(pinInfo && pinInfo.isDefault);
+					var title = document.getElementById('wa-cp-title');
+					var desc = document.getElementById('wa-cp-desc');
+					var oldRow = document.getElementById('wa-cp-old-row');
+					var cancelBtn = document.getElementById('wa-cp-cancel-btn');
+					if (title) title.textContent = isDefault ? 'Buat PIN Sendiri' : 'Ubah PIN WhatsApp';
+					if (desc) desc.textContent = isDefault ?
+						'PIN masih 1234 (bawaan) yang bisa ditebak siapa saja. Buat PIN 4-6 angka sendiri.' :
+						'Tentukan 4-6 angka PIN keamanan Anda';
+					if (oldRow) oldRow.style.display = isDefault ? 'none' : '';
+					if (cancelBtn) cancelBtn.style.display = changeOpts.forced ? 'none' : '';
+					modal.style.display = 'flex';
+					var errEl = document.getElementById('wa-cp-error');
+					if (errEl) errEl.textContent = '';
+					['wa-cp-old', 'wa-cp-new', 'wa-cp-confirm'].forEach(function(id) {
+						var el = document.getElementById(id);
+						if (el) el.value = '';
+					});
+					var first = document.getElementById(isDefault ? 'wa-cp-new' : 'wa-cp-old');
+					if (first) setTimeout(function() { first.focus(); }, 50);
 				});
 			};
 
-			window.lockWhatsApp = function() {
+			// reason: 'auto' (inactivity or hidden to tray), 'restore' (was locked when the app closed), or
+			// nothing for an explicit lock (Ctrl+L, tray, Control Center).
+			window.lockWhatsApp = function(reason) {
+				if (pinInfo && pinInfo.isDefault && reason !== 'restore') {
+					// A lock that anyone can open with 1234 protects nothing
+					if (reason === 'auto') return;
+					showAddonToast('Buat PIN sendiri dulu sebelum mengunci');
+					window.openChangePinModal({ thenLock: true });
+					return;
+				}
 				whenDOMReady(function() {
 					var overlay = createLockOverlay();
 					if (overlay) {
@@ -1729,6 +1838,7 @@
 								}
 							}, 50);
 						}
+						refreshPinInfo();
 					}
 				});
 			};
@@ -1743,7 +1853,7 @@
 
 			if (isLocked) {
 				whenDOMReady(function() {
-					window.lockWhatsApp();
+					window.lockWhatsApp('restore');
 				});
 			}
 		})();
