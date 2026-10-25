@@ -23,7 +23,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **Balasan cepat**: buat pintasan seperti `/toko`, ketik di chat, lalu tekan Tab, Enter, atau Spasi untuk mengembangkannya. Teks bisa memakai variabel `{nama}` (nama chat), `{depan}`, `{tanggal}`, `{hari}`, dan `{jam}`.
 - **Ekspor chat**: simpan pesan yang sudah termuat di chat terbuka sebagai berkas `.txt`.
 - **Chat ke nomor baru** (`Ctrl + N`): tanpa menyimpan kontak. `0812…` otomatis menjadi `62812…`.
-- **Catatan** (`Alt + N`): panel samping dengan banyak catatan, pencarian, dan simpan otomatis.
+- **Catatan** (`Alt + N`): panel samping dengan banyak catatan, pencarian, dan simpan otomatis. Catatan yang sama muncul di WhatsApp dan Telegram.
 - **Unduh status**: tombol unduh muncul saat Anda membuka status foto atau video.
 - **Simpan Sebagai & panel unduhan**: setiap unduhan (WhatsApp dan Telegram) membuka dialog *Save As* Windows, lalu WebView2 menulis file langsung ke sana, jadi ukuran file tidak masalah. Progres tampil di panel kecil kanan bawah dengan tombol Batal dan Buka folder.
 - **Pintasan clipboard standar**: `Ctrl C`, `Ctrl X`, `Ctrl V`, dan `Ctrl A` berfungsi normal.
@@ -39,7 +39,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 ### Sistem
 - **Dua akun WhatsApp** dalam jendela terpisah (`--profile 2`).
 - **Telegram Web** berdampingan dengan WhatsApp (`Ctrl + 2`), serta **tampilan berdampingan 50:50** (`Ctrl + 3`).
-- **Telegram**: kunci PIN (`Ctrl + L`) yang juga membuat Telegram tidak lagi terlihat online selama terkunci, **Mode Privasi** blur (`Alt + P`, tombol Privasi di dock, Shift+klik untuk ganti intensitas), dan notifikasi dengan ikon serta nama aplikasi berbeda dari WhatsApp.
+- **Telegram**: kunci PIN (`Ctrl + L`) yang juga membuat Telegram tidak lagi terlihat online selama terkunci, **Mode Privasi** blur (`Alt + P`, tombol Privasi di dock, Shift+klik untuk ganti intensitas), notifikasi dengan ikon serta nama aplikasi berbeda dari WhatsApp, **Catatan** (`Alt + N` atau tombol di dock), **chat ke nomor baru** (`Ctrl + N`, hanya untuk akun yang mengizinkan dicari lewat nomor), dan jumlah belum dibaca yang ikut di badge taskbar dan tooltip tray.
 - **Notifikasi pintar**: klik notifikasi untuk langsung membuka chatnya, tombol "Bisukan chat ini" di notifikasi, daftar chat yang dibisukan, dan **jam tenang** (misalnya 22:00–07:00). Diatur di Pusat Kontrol > Sistem dan berlaku untuk WhatsApp dan Telegram. Aplikasi mendaftarkan protokol `wadesktoplight:` (per pengguna) untuk klik notifikasi.
 - **System Tray**: tombol Close menyembunyikan aplikasi ke tray, taskbar berkedip saat ada pesan, tooltip menampilkan jumlah belum dibaca, dan tombol taskbar diberi badge angka merah.
 - **Kunci saat disembunyikan** (opsional): kunci PIN otomatis saat jendela disembunyikan ke tray atau lewat Boss Key.
@@ -93,9 +93,11 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `pinlock.go` | PIN kunci aplikasi: hash PBKDF2, hitungan PIN salah, dan jeda |
 | `downloads.go` | Dialog Save As untuk unduhan dan laporan progres ke halaman |
 | `notify.go` | Toast, klik notifikasi (protokol `wadesktoplight:` + `WM_COPYDATA`), jam tenang, chat dibisukan |
+| `notes.go` | Penyimpanan catatan bersama WhatsApp & Telegram |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
 | `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |
+| `assets/notify.js`, `assets/notes.js`, `assets/downloads.js` | Skrip bersama WhatsApp & Telegram: polyfill notifikasi, catatan, panel unduhan |
 | `assets/addon.css` | Design system: token warna, Pusat Kontrol, dock, toast, mode ringkas |
 | `assets/control-center.html` | Markup Pusat Kontrol |
 | `assets/preview.html` | Pratinjau Pusat Kontrol di browser tanpa menjalankan aplikasi |

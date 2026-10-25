@@ -40,6 +40,9 @@ var downloadsJS string
 //go:embed assets/notify.js
 var notifyJS string
 
+//go:embed assets/notes.js
+var notesJS string
+
 // App icon (also the WhatsApp notification icon) and the Telegram notification icon. They are written
 // to the user config dir at startup so the app and its toasts do not depend on files next to the exe.
 //
@@ -289,6 +292,7 @@ var (
 	forceQuit             bool
 	privacyModeActive     bool
 	unreadMessagesCount   int
+	telegramUnreadCount   int
 	currentProfileID      = "1"
 	currentWindowTitle    = windowTitle
 	currentMutexName      = mutexName
@@ -658,11 +662,26 @@ func customWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 	return r
 }
 
+// updateUnreadCount and updateTelegramUnreadCount record each messenger's unread count; the taskbar
+// badge, tray tooltip and taskbar flashing show the total.
 func updateUnreadCount(count int) {
 	unreadMessagesCount = count
+	refreshUnreadIndicators()
+}
+
+func updateTelegramUnreadCount(count int) {
+	telegramUnreadCount = count
+	refreshUnreadIndicators()
+}
+
+func refreshUnreadIndicators() {
+	count := unreadMessagesCount + telegramUnreadCount
 	setTaskbarBadge(count)
 	if count > 0 {
 		tip := fmt.Sprintf("%s (%d pesan baru)", currentWindowTitle, count)
+		if unreadMessagesCount > 0 && telegramUnreadCount > 0 {
+			tip = fmt.Sprintf("%s (%d WhatsApp, %d Telegram)", currentWindowTitle, unreadMessagesCount, telegramUnreadCount)
+		}
 		updateTrayTooltip(tip)
 
 		fg, _, _ := procGetFgWindow.Call()
@@ -797,7 +816,11 @@ func initTelegramChild() {
 		switchToSplitView()
 	})
 	bindPinLock(w)
+	bindNotes(w)
 	enableDownloads(w, globalHwnd)
+	_ = w.Bind("onUnreadCountChanged", func(count int) {
+		updateTelegramUnreadCount(count)
+	})
 
 	w.Init(telegramInitScript)
 	w.Navigate(telegramAppURL)
@@ -1043,14 +1066,19 @@ func runTelegramWindow(userDataDir string, startMinimized bool) {
 		arrangeSideBySide()
 	})
 	bindPinLock(w)
+	bindNotes(w)
 	enableDownloads(w, hwnd)
+	_ = w.Bind("onUnreadCountChanged", func(count int) {
+		updateTelegramUnreadCount(count)
+	})
 
 	w.Init(telegramInitScript)
 	w.Navigate(telegramAppURL)
 	w.Run()
 }
 
-var telegramInitScript = strings.ReplaceAll(telegramMainJS, "__WA_USER_AGENT__", userAgent) + "\n" + notifyJS + "\n" + downloadsJS
+var telegramInitScript = "var WA_ADDON_CSS = " + jsString(addonCSS) + ";\n" +
+	strings.ReplaceAll(telegramMainJS, "__WA_USER_AGENT__", userAgent) + "\n" + notifyJS + "\n" + notesJS + "\n" + downloadsJS
 
 
 func sanitizeNotificationText(s string, maxLen int) string {
@@ -1236,6 +1264,7 @@ func main() {
 
 	// Downloads go through the Save As dialog and the download panel
 	enableDownloads(w, hwnd)
+	bindNotes(w)
 
 	// Bind unread message counter
 	_ = w.Bind("onUnreadCountChanged", func(count int) {
@@ -1285,7 +1314,7 @@ func main() {
 	initScript := "var WA_ADDON_CSS = " + jsString(addonCSS) + ";\nvar WA_CC_HTML = " + jsString(controlCenterHTML) + ";\n" +
 		strings.ReplaceAll(addonMainJS, "__WA_USER_AGENT__", userAgent)
 
-	w.Init(initScript + "\n" + addonCoreJS + "\n" + notifyJS + "\n" + downloadsJS)
+	w.Init(initScript + "\n" + addonCoreJS + "\n" + notifyJS + "\n" + notesJS + "\n" + downloadsJS)
 
 	// Note: Telegram child webview is lazily loaded on demand via switchToTelegram / switchToSplitView
 	w.Navigate(appURL)

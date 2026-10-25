@@ -78,6 +78,11 @@
 						'<span>Privasi</span>' +
 					'</button>',
 					'<div class="wa-dock-sep"></div>',
+					'<button id="tg-tab-notes" class="wa-dock-item" title="Catatan, sama dengan di WhatsApp (Alt+N)">' +
+						'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+						'<span>Catatan</span>' +
+					'</button>',
+					'<div class="wa-dock-sep"></div>',
 					'<button id="tg-tab-lock" class="wa-dock-item" title="Kunci Telegram (Ctrl+L)">' +
 						'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' +
 						'<span>Kunci</span>' +
@@ -88,6 +93,15 @@
 				var btnTG = bar.querySelector('#tg-tab-tg');
 				var btnSplit = bar.querySelector('#tg-tab-split');
 				var btnLock = bar.querySelector('#tg-tab-lock');
+				var btnNotes = bar.querySelector('#tg-tab-notes');
+
+				if (btnNotes) {
+					btnNotes.onclick = function(e) {
+						e.preventDefault();
+						e.stopPropagation();
+						if (window.toggleScratchpad) window.toggleScratchpad();
+					};
+				}
 
 				if (btnLock) {
 					btnLock.onclick = function(e) {
@@ -1188,3 +1202,115 @@
 		}
 	})();
 
+
+	// Feature: unread count for the taskbar badge and tray tooltip. Telegram Web reports it through the
+	// Badging API (navigator.setAppBadge, as for an installed web app); the "(N)" title prefix is a fallback.
+	(function() {
+		var last = -1;
+		function report(n) {
+			n = Math.max(0, parseInt(n, 10) || 0);
+			if (n === last) return;
+			last = n;
+			if (window.onUnreadCountChanged) window.onUnreadCountChanged(n);
+		}
+		var badgeSeen = false;
+		try {
+			navigator.setAppBadge = function(n) { badgeSeen = true; report(n === undefined ? 1 : n); return Promise.resolve(); };
+			navigator.clearAppBadge = function() { badgeSeen = true; report(0); return Promise.resolve(); };
+		} catch(e) {}
+		setInterval(function() {
+			if (badgeSeen) return;
+			var m = (document.title || '').match(/^\((\d+)\+?\)/);
+			report(m ? m[1] : 0);
+		}, 2000);
+	})();
+
+	// Toast used by the shared notes drawer (notes.js)
+	window.tgShowToast = function(msg) {
+		var root = document.documentElement || document.body;
+		if (!root) return;
+		var toast = document.getElementById('tg-toast-msg');
+		if (!toast) {
+			toast = document.createElement('div');
+			toast.id = 'tg-toast-msg';
+			toast.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(23,33,43,0.96);color:#ffffff;padding:8px 18px;border-radius:20px;font-size:12.5px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.12);z-index:2147483647;pointer-events:none;transition:opacity 0.2s ease,transform 0.2s ease;opacity:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
+			root.appendChild(toast);
+		}
+		toast.textContent = msg;
+		toast.style.opacity = '1';
+		clearTimeout(toast._timer);
+		toast._timer = setTimeout(function() { toast.style.opacity = '0'; }, 2500);
+	};
+
+	// Feature: chat to a phone number that is not in the contacts (Ctrl + N). Telegram only finds an
+	// account by number when its owner allows that in their privacy settings.
+	(function() {
+		function normalize(raw) {
+			var cleaned = String(raw || '').replace(/[^\d+]/g, '');
+			if (cleaned.charAt(0) === '+') cleaned = cleaned.substring(1);
+			else if (cleaned.charAt(0) === '0') cleaned = '62' + cleaned.substring(1);
+			return cleaned;
+		}
+
+		function createModal() {
+			var existing = document.getElementById('tg-direct-chat-modal');
+			if (existing) return existing;
+			var root = document.body || document.documentElement;
+			if (!root) return null;
+			var modal = document.createElement('div');
+			modal.id = 'tg-direct-chat-modal';
+			modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:2147483646;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;';
+			modal.innerHTML = '<div style="background:#17212b;border:1px solid rgba(255,255,255,0.12);border-radius:14px;width:340px;padding:24px;box-shadow:0 24px 60px rgba(0,0,0,0.85);box-sizing:border-box;">' +
+				'<h3 style="margin:0 0 4px 0;font-size:16px;font-weight:600;color:#ffffff;">Chat ke nomor baru</h3>' +
+				'<p style="margin:0 0 14px 0;font-size:12px;color:#708499;">Tanpa menyimpan kontak. 0812… otomatis menjadi 62812…</p>' +
+				'<input id="tg-direct-phone" type="text" inputmode="tel" placeholder="Contoh: 08123456789 atau +628…" style="width:100%;height:36px;background:#0e1621;border:1px solid rgba(255,255,255,0.14);color:#ffffff;padding:0 12px;border-radius:8px;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:6px;">' +
+				'<div id="tg-direct-error" style="color:#ef4444;font-size:12px;min-height:16px;margin-bottom:10px;"></div>' +
+				'<div style="display:flex;gap:8px;">' +
+				'<button id="tg-direct-cancel" style="flex:1;height:34px;background:#242f3d;color:#ffffff;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:12px;cursor:pointer;">Batal</button>' +
+				'<button id="tg-direct-open" style="flex:1;height:34px;background:#24A1DE;color:#ffffff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;">Buka Chat</button>' +
+				'</div></div>';
+			root.appendChild(modal);
+
+			var input = modal.querySelector('#tg-direct-phone');
+			var err = modal.querySelector('#tg-direct-error');
+			function close() { modal.style.display = 'none'; }
+			function submit() {
+				var num = normalize(input.value);
+				if (num.length < 7) { err.textContent = 'Nomor telepon tidak valid!'; input.focus(); return; }
+				close();
+				input.value = '';
+				window.tgShowToast('Membuka chat: +' + num + '…');
+				// Telegram Web K opens tg:// links passed as tgaddr; resolve?phone= looks the number up.
+				location.hash = '#?tgaddr=' + encodeURIComponent('tg://resolve?phone=' + num);
+			}
+			modal.querySelector('#tg-direct-open').onclick = submit;
+			modal.querySelector('#tg-direct-cancel').onclick = close;
+			modal.onclick = function(e) { if (e.target === modal) close(); };
+			['keydown', 'keyup', 'keypress', 'input'].forEach(function(evt) {
+				input.addEventListener(evt, function(e) { e.stopPropagation(); });
+			});
+			input.addEventListener('keydown', function(e) {
+				if (e.key === 'Enter') { e.preventDefault(); submit(); }
+				if (e.key === 'Escape') { e.preventDefault(); close(); }
+			});
+			return modal;
+		}
+
+		window.openDirectChatModal = function() {
+			var modal = createModal();
+			if (!modal) return;
+			modal.style.display = 'flex';
+			var err = modal.querySelector('#tg-direct-error');
+			if (err) err.textContent = '';
+			var input = modal.querySelector('#tg-direct-phone');
+			if (input) setTimeout(function() { input.focus(); }, 50);
+		};
+
+		window.addEventListener('keydown', function(e) {
+			if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.code === 'KeyN' || e.key === 'n' || e.key === 'N')) {
+				e.preventDefault();
+				e.stopPropagation();
+				window.openDirectChatModal();
+			}
+		}, true);
+	})();
