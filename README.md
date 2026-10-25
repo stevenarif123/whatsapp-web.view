@@ -40,6 +40,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **Dua akun WhatsApp** dalam jendela terpisah (`--profile 2`).
 - **Telegram Web** berdampingan dengan WhatsApp (`Ctrl + 2`), serta **tampilan berdampingan 50:50** (`Ctrl + 3`).
 - **Telegram**: kunci PIN (`Ctrl + L`) yang juga membuat Telegram tidak lagi terlihat online selama terkunci, **Mode Privasi** blur (`Alt + P`, tombol Privasi di dock, Shift+klik untuk ganti intensitas), dan notifikasi dengan ikon serta nama aplikasi berbeda dari WhatsApp.
+- **Notifikasi pintar**: klik notifikasi untuk langsung membuka chatnya, tombol "Bisukan chat ini" di notifikasi, daftar chat yang dibisukan, dan **jam tenang** (misalnya 22:00–07:00). Diatur di Pusat Kontrol > Sistem dan berlaku untuk WhatsApp dan Telegram. Aplikasi mendaftarkan protokol `wadesktoplight:` (per pengguna) untuk klik notifikasi.
 - **System Tray**: tombol Close menyembunyikan aplikasi ke tray, taskbar berkedip saat ada pesan, tooltip menampilkan jumlah belum dibaca, dan tombol taskbar diberi badge angka merah.
 - **Kunci saat disembunyikan** (opsional): kunci PIN otomatis saat jendela disembunyikan ke tray atau lewat Boss Key.
 - **Mulai otomatis** saat Windows menyala, langsung ke tray.
@@ -91,6 +92,7 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `badge_windows.go` | Badge angka di tombol taskbar (ITaskbarList3) |
 | `pinlock.go` | PIN kunci aplikasi: hash PBKDF2, hitungan PIN salah, dan jeda |
 | `downloads.go` | Dialog Save As untuk unduhan dan laporan progres ke halaman |
+| `notify.go` | Toast, klik notifikasi (protokol `wadesktoplight:` + `WM_COPYDATA`), jam tenang, chat dibisukan |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
 | `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |

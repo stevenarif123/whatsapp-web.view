@@ -15,7 +15,6 @@ import (
 	"unicode"
 	"unsafe"
 
-	"github.com/go-toast/toast"
 	"github.com/jchv/go-webview2"
 	"golang.org/x/sys/windows"
 )
@@ -37,6 +36,9 @@ var telegramMainJS string
 
 //go:embed assets/downloads.js
 var downloadsJS string
+
+//go:embed assets/notify.js
+var notifyJS string
 
 // App icon (also the WhatsApp notification icon) and the Telegram notification icon. They are written
 // to the user config dir at startup so the app and its toasts do not depend on files next to the exe.
@@ -596,6 +598,11 @@ func notifyHidden() {
 
 func customWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 	switch uint32(msg) {
+	case WM_COPYDATA:
+		if uri := readCopyData(lParam); uri != "" {
+			handleActivation(uri)
+			return 1
+		}
 	case WM_CLOSE:
 		if !forceQuit {
 			// Minimize to tray instead of quitting
@@ -767,9 +774,7 @@ func initTelegramChild() {
 
 	tgNotifIcon := iconFile("notif-telegram.png", telegramNotifPNG)
 
-	_ = w.Bind("sendNativeNotification", func(title, body string) {
-		go showNativeNotification(tgToastAppID, title, body, tgNotifIcon)
-	})
+	bindNotifications(w, "tg", tgToastAppID, tgNotifIcon)
 	_ = w.Bind("openExternalLink", func(rawURL string) {
 		openExternalLink(rawURL)
 	})
@@ -934,6 +939,11 @@ func setTelegramDarkWindowFrame(hwnd uintptr) {
 
 func telegramWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 	switch uint32(msg) {
+	case WM_COPYDATA:
+		if uri := readCopyData(lParam); uri != "" {
+			handleActivation(uri)
+			return 1
+		}
 	case WM_CLOSE:
 		if !forceQuit {
 			procShowWindow.Call(hWnd, SW_HIDE)
@@ -1019,9 +1029,7 @@ func runTelegramWindow(userDataDir string, startMinimized bool) {
 
 	origWndProc = setWindowLongPtr(hwnd, GWLP_WNDPROC, windows.NewCallback(telegramWndProc))
 
-	_ = w.Bind("sendNativeNotification", func(title, body string) {
-		go showNativeNotification(tgToastAppID, title, body, tgNotifIcon)
-	})
+	bindNotifications(w, "tg", tgToastAppID, tgNotifIcon)
 	_ = w.Bind("openExternalLink", func(rawURL string) {
 		openExternalLink(rawURL)
 	})
@@ -1042,7 +1050,7 @@ func runTelegramWindow(userDataDir string, startMinimized bool) {
 	w.Run()
 }
 
-var telegramInitScript = strings.ReplaceAll(telegramMainJS, "__WA_USER_AGENT__", userAgent) + "\n" + downloadsJS
+var telegramInitScript = strings.ReplaceAll(telegramMainJS, "__WA_USER_AGENT__", userAgent) + "\n" + notifyJS + "\n" + downloadsJS
 
 
 func sanitizeNotificationText(s string, maxLen int) string {
@@ -1057,22 +1065,6 @@ func sanitizeNotificationText(s string, maxLen int) string {
 		res = res[:maxLen] + "..."
 	}
 	return res
-}
-
-func showNativeNotification(appID, title, message, iconPath string) {
-	title = sanitizeNotificationText(title, 128)
-	message = sanitizeNotificationText(message, 512)
-	if title == "" && message == "" {
-		return
-	}
-
-	notification := toast.Notification{
-		AppID:   appID,
-		Title:   title,
-		Message: message,
-		Icon:    iconPath,
-	}
-	_ = notification.Push()
 }
 
 func openExternalLink(rawURL string) {
@@ -1109,6 +1101,17 @@ func main() {
 			trimMemory()
 		}
 	}()
+
+	// A click on one of our toasts starts the exe with --activate <uri>; hand it to the running window.
+	for i := 1; i+1 < len(os.Args); i++ {
+		if os.Args[i] == "--activate" {
+			if forwardActivation(os.Args[i+1]) {
+				return
+			}
+			break
+		}
+	}
+	registerNotifyProtocol()
 
 	isTelegram := false
 	profileID := "1"
@@ -1223,10 +1226,8 @@ func main() {
 	// Subclass window procedure for System Tray events and Close-to-Tray
 	origWndProc = setWindowLongPtr(hwnd, GWLP_WNDPROC, windows.NewCallback(customWndProc))
 
-	// Bind native notification bridge
-	_ = w.Bind("sendNativeNotification", func(title, body string) {
-		go showNativeNotification(waToastAppID, title, body, iconFullPath)
-	})
+	// Bind native notification bridge and notification settings
+	bindNotifications(w, "wa", waToastAppID, iconFullPath)
 
 	// Bind external link handler (opens in system default browser)
 	_ = w.Bind("openExternalLink", func(rawURL string) {
@@ -1284,7 +1285,7 @@ func main() {
 	initScript := "var WA_ADDON_CSS = " + jsString(addonCSS) + ";\nvar WA_CC_HTML = " + jsString(controlCenterHTML) + ";\n" +
 		strings.ReplaceAll(addonMainJS, "__WA_USER_AGENT__", userAgent)
 
-	w.Init(initScript + "\n" + addonCoreJS + "\n" + downloadsJS)
+	w.Init(initScript + "\n" + addonCoreJS + "\n" + notifyJS + "\n" + downloadsJS)
 
 	// Note: Telegram child webview is lazily loaded on demand via switchToTelegram / switchToSplitView
 	w.Navigate(appURL)

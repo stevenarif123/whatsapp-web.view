@@ -313,6 +313,36 @@
       </div>
 
       <div class="wa-section">
+        <div class="wa-section-label">Notifikasi</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Jam tenang</div>
+              <div class="wa-row-desc">Tidak ada notifikasi Windows dari WhatsApp &amp; Telegram pada jam ini. Pesan tetap masuk dan tetap dihitung di tray.</div>
+            </div>
+            <label class="wa-switch"><input type="checkbox" id="wa-cc-dnd-cb"><span class="wa-slider"></span></label>
+          </div>
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Dari &ndash; sampai</div>
+            </div>
+            <div class="wa-row-actions">
+              <input id="wa-cc-dnd-start" class="wa-input" type="time" style="width:110px;">
+              <input id="wa-cc-dnd-end" class="wa-input" type="time" style="width:110px;">
+            </div>
+          </div>
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Chat dibisukan (<span id="wa-mute-count">0</span>)</div>
+              <div class="wa-row-desc">Notifikasi dari chat ini tidak ditampilkan. Bisa juga lewat tombol "Bisukan chat ini" di notifikasi. Klik notifikasi untuk langsung membuka chatnya.</div>
+            </div>
+            <button id="wa-cc-mute-current-btn" class="wa-btn wa-btn-secondary">Bisukan chat terbuka</button>
+          </div>
+          <div id="wa-mute-list"></div>
+        </div>
+      </div>
+
+      <div class="wa-section">
         <div class="wa-section-label">Akun &amp; messenger</div>
         <div class="wa-group">
           <div class="wa-btn-grid">

@@ -536,6 +536,47 @@
 		});
 	};
 
+	// Used by notify.js when a toast is clicked but the page registered no click handler.
+	window.waOpenChatByName = openChatByName;
+
+	// Quiet hours and muted chats live in Go (shared with Telegram); this renders them in the Control Center.
+	var notifyCache = null;
+	function loadNotify(cb) {
+		if (typeof window.getNotifySettings !== 'function') return;
+		window.getNotifySettings().then(function (s) { notifyCache = s; if (cb) cb(s); });
+	}
+	function saveNotify(s, cb) {
+		if (typeof window.setNotifySettings !== 'function') return;
+		window.setNotifySettings(s).then(function (saved) { notifyCache = saved; renderMuteList(); if (cb) cb(saved); });
+	}
+	function renderMuteList() {
+		var list = document.getElementById('wa-mute-list');
+		var c = document.getElementById('wa-mute-count');
+		var muted = (notifyCache && notifyCache.muted) || [];
+		if (c) c.textContent = String(muted.length);
+		if (!list) return;
+		list.innerHTML = '';
+		muted.forEach(function (name) {
+			var row = document.createElement('div');
+			row.className = 'wa-row';
+			row.innerHTML = '<div class="wa-row-title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></div><button class="wa-btn wa-btn-secondary wa-btn-sm">Aktifkan lagi</button>';
+			row.firstChild.textContent = name;
+			row.lastChild.onclick = function () {
+				var s = Object.assign({}, notifyCache);
+				s.muted = muted.filter(function (x) { return x !== name; });
+				saveNotify(s);
+				toast('Notifikasi aktif lagi: ' + name);
+			};
+			list.appendChild(row);
+		});
+	}
+
+	// Called from Go after "Bisukan chat ini" was pressed on a toast.
+	window.waOnChatMuted = function (name) {
+		toast('Notifikasi dibisukan: ' + name);
+		loadNotify(renderMuteList);
+	};
+
 	// Called from Go when the window is hidden to the tray or via the Boss Key.
 	window.waOnHidden = function () {
 		if (loadJSON('wa_lock_on_hide', false) && typeof window.lockWhatsApp === 'function') window.lockWhatsApp('auto');
@@ -618,6 +659,35 @@
 			toast(lockHideCb.checked ? 'Kunci saat disembunyikan: aktif' : 'Kunci saat disembunyikan: nonaktif');
 		};
 
+		var dndCb = modal.querySelector('#wa-cc-dnd-cb');
+		var dndStart = modal.querySelector('#wa-cc-dnd-start');
+		var dndEnd = modal.querySelector('#wa-cc-dnd-end');
+		var muteBtn = modal.querySelector('#wa-cc-mute-current-btn');
+		function saveDnd() {
+			if (!notifyCache) return;
+			var s = Object.assign({}, notifyCache, {
+				dndEnabled: !!(dndCb && dndCb.checked),
+				dndStart: (dndStart && dndStart.value) || notifyCache.dndStart,
+				dndEnd: (dndEnd && dndEnd.value) || notifyCache.dndEnd
+			});
+			saveNotify(s);
+		}
+		if (dndCb) dndCb.onchange = function () {
+			saveDnd();
+			toast(dndCb.checked ? 'Jam tenang: aktif' : 'Jam tenang: nonaktif');
+		};
+		if (dndStart) dndStart.onchange = saveDnd;
+		if (dndEnd) dndEnd.onchange = saveDnd;
+		if (muteBtn) muteBtn.onclick = function () {
+			var name = openChatName();
+			if (!name) { toast('Buka sebuah chat dulu'); return; }
+			if (!notifyCache) return;
+			var muted = (notifyCache.muted || []).slice();
+			if (muted.indexOf(name) === -1) muted.push(name);
+			saveNotify(Object.assign({}, notifyCache, { muted: muted }));
+			toast('Notifikasi dibisukan: ' + name);
+		};
+
 		var prevSync = modal._syncUI;
 		modal._syncUI = function () {
 			// Older saved configs may hold a blur size that is not one of the presets.
@@ -636,6 +706,12 @@
 			if (radarNames) radarNames.value = radar.names || '';
 			if (lockHideCb) lockHideCb.checked = !!loadJSON('wa_lock_on_hide', false);
 			if (compactCb) compactCb.checked = !!compactEnabled;
+			loadNotify(function (s) {
+				if (dndCb) dndCb.checked = !!s.dndEnabled;
+				if (dndStart) dndStart.value = s.dndStart || '22:00';
+				if (dndEnd) dndEnd.value = s.dndEnd || '07:00';
+				renderMuteList();
+			});
 			refreshPins();
 		};
 	};

@@ -6,24 +6,6 @@
 		get: () => '__WA_USER_AGENT__'
 	});
 
-	// Native Notification Polyfill for Windows Desktop Toast
-	(function() {
-		window.Notification = function(title, options) {
-			options = options || {};
-			var body = options.body || '';
-			if (window.sendNativeNotification) {
-				window.sendNativeNotification(title, body);
-			}
-			this.title = title;
-		};
-		window.Notification.permission = 'granted';
-		window.Notification.requestPermission = function(callback) {
-			var p = Promise.resolve('granted');
-			if (typeof callback === 'function') callback('granted');
-			return p;
-		};
-	})();
-
 	// External link protection: Open external links in default system browser
 	(function() {
 		var origOpen = window.open;
