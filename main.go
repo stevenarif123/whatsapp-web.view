@@ -35,6 +35,9 @@ var addonMainJS string
 //go:embed assets/telegram-main.js
 var telegramMainJS string
 
+//go:embed assets/downloads.js
+var downloadsJS string
+
 // App icon (also the WhatsApp notification icon) and the Telegram notification icon. They are written
 // to the user config dir at startup so the app and its toasts do not depend on files next to the exe.
 //
@@ -81,6 +84,8 @@ var (
 	dwmapi               = windows.NewLazySystemDLL("dwmapi.dll")
 	shell32              = windows.NewLazySystemDLL("shell32.dll")
 	advapi32             = windows.NewLazySystemDLL("advapi32.dll")
+	comdlg32             = windows.NewLazySystemDLL("comdlg32.dll")
+	procGetSaveFile      = comdlg32.NewProc("GetSaveFileNameW")
 	psapi                = windows.NewLazySystemDLL("psapi.dll")
 	procEmptyWorkingSet  = psapi.NewProc("EmptyWorkingSet")
 	procCreateMutex      = kernel32.NewProc("CreateMutexW")
@@ -151,6 +156,11 @@ const (
 	DWMWA_USE_IMMERSIVE_DARK_MODE             = 20
 	DWMWA_CAPTION_COLOR                      = 35
 	DWMWA_TEXT_COLOR                         = 36
+
+	// Save As dialog flags
+	OFN_OVERWRITEPROMPT = 0x00000002
+	OFN_NOCHANGEDIR     = 0x00000008
+	OFN_PATHMUSTEXIST   = 0x00000800
 
 	// Win32 Window Messages & Constants
 	WM_DESTROY       = 0x0002
@@ -782,6 +792,7 @@ func initTelegramChild() {
 		switchToSplitView()
 	})
 	bindPinLock(w)
+	enableDownloads(w, globalHwnd)
 
 	w.Init(telegramInitScript)
 	w.Navigate(telegramAppURL)
@@ -1024,13 +1035,14 @@ func runTelegramWindow(userDataDir string, startMinimized bool) {
 		arrangeSideBySide()
 	})
 	bindPinLock(w)
+	enableDownloads(w, hwnd)
 
 	w.Init(telegramInitScript)
 	w.Navigate(telegramAppURL)
 	w.Run()
 }
 
-var telegramInitScript = strings.ReplaceAll(telegramMainJS, "__WA_USER_AGENT__", userAgent)
+var telegramInitScript = strings.ReplaceAll(telegramMainJS, "__WA_USER_AGENT__", userAgent) + "\n" + downloadsJS
 
 
 func sanitizeNotificationText(s string, maxLen int) string {
@@ -1221,6 +1233,9 @@ func main() {
 		openExternalLink(rawURL)
 	})
 
+	// Downloads go through the Save As dialog and the download panel
+	enableDownloads(w, hwnd)
+
 	// Bind unread message counter
 	_ = w.Bind("onUnreadCountChanged", func(count int) {
 		updateUnreadCount(count)
@@ -1269,7 +1284,7 @@ func main() {
 	initScript := "var WA_ADDON_CSS = " + jsString(addonCSS) + ";\nvar WA_CC_HTML = " + jsString(controlCenterHTML) + ";\n" +
 		strings.ReplaceAll(addonMainJS, "__WA_USER_AGENT__", userAgent)
 
-	w.Init(initScript + "\n" + addonCoreJS)
+	w.Init(initScript + "\n" + addonCoreJS + "\n" + downloadsJS)
 
 	// Note: Telegram child webview is lazily loaded on demand via switchToTelegram / switchToSplitView
 	w.Navigate(appURL)

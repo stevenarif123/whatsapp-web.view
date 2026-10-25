@@ -25,6 +25,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **Chat ke nomor baru** (`Ctrl + N`): tanpa menyimpan kontak. `0812…` otomatis menjadi `62812…`.
 - **Catatan** (`Alt + N`): panel samping dengan banyak catatan, pencarian, dan simpan otomatis.
 - **Unduh status**: tombol unduh muncul saat Anda membuka status foto atau video.
+- **Simpan Sebagai & panel unduhan**: setiap unduhan (WhatsApp dan Telegram) membuka dialog *Save As* Windows, lalu WebView2 menulis file langsung ke sana, jadi ukuran file tidak masalah. Progres tampil di panel kecil kanan bawah dengan tombol Batal dan Buka folder.
 - **Pintasan clipboard standar**: `Ctrl C`, `Ctrl X`, `Ctrl V`, dan `Ctrl A` berfungsi normal.
 
 ### Tampilan
@@ -89,6 +90,7 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `main.go` | Jendela WebView2, tray, hotkey, profil, tata letak WhatsApp/Telegram |
 | `badge_windows.go` | Badge angka di tombol taskbar (ITaskbarList3) |
 | `pinlock.go` | PIN kunci aplikasi: hash PBKDF2, hitungan PIN salah, dan jeda |
+| `downloads.go` | Dialog Save As untuk unduhan dan laporan progres ke halaman |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
 | `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |
@@ -96,7 +98,7 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `assets/control-center.html` | Markup Pusat Kontrol |
 | `assets/preview.html` | Pratinjau Pusat Kontrol di browser tanpa menjalankan aplikasi |
 | `tools/dev.ps1`, `tools/smoke.js` | Menjalankan salinan dev dengan DevTools dan uji asap end-to-end |
-| `vendor/github.com/jchv/go-webview2` | Library WebView2 (ditambah `SetContentBounds` untuk ukuran viewport) |
+| `vendor/github.com/jchv/go-webview2` | Library WebView2 (ditambah `SetContentBounds` untuk ukuran viewport, event unduhan `ICoreWebView2_4`, dan antrean `Dispatch` bersama agar webview Telegram yang tertanam juga menerima hasil binding) |
 | `app.manifest`, `resource.rc`, `icon.ico` | Manifest, resource, dan ikon Windows |
 | `assets/notif-telegram.png`, `tools/gen_telegram_icon.py` | Ikon notifikasi Telegram dan skrip pembuatnya |
 

@@ -57,7 +57,9 @@ type webview struct {
 	minsz      w32.Point
 	m          sync.Mutex
 	bindings   map[string]interface{}
-	dispatchq  []func()
+
+	downloadStarting *edge.DownloadStartingEventHandler
+	downloads        map[int]*download
 }
 
 type WindowOptions struct {
@@ -369,10 +371,10 @@ func (w *webview) Run() {
 			0,
 		)
 		if msg.Message == w32.WMApp {
-			w.m.Lock()
-			q := append([]func(){}, w.dispatchq...)
-			w.dispatchq = []func(){}
-			w.m.Unlock()
+			dispatchMu.Lock()
+			q := dispatchq
+			dispatchq = nil
+			dispatchMu.Unlock()
 			for _, v := range q {
 				v()
 			}
@@ -456,10 +458,17 @@ func (w *webview) Eval(js string) {
 	w.browser.Eval(js)
 }
 
+// The dispatch queue is shared by all webviews: a webview embedded in another one's window (the
+// Telegram child) never calls Run, so its queued work must be drained by the Run loop of its host.
+var (
+	dispatchMu sync.Mutex
+	dispatchq  []func()
+)
+
 func (w *webview) Dispatch(f func()) {
-	w.m.Lock()
-	w.dispatchq = append(w.dispatchq, f)
-	w.m.Unlock()
+	dispatchMu.Lock()
+	dispatchq = append(dispatchq, f)
+	dispatchMu.Unlock()
 	_, _, _ = w32.User32PostThreadMessageW.Call(w.mainthread, w32.WMApp, 0, 0)
 }
 

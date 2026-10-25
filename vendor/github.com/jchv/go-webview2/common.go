@@ -86,4 +86,8 @@ type WebView interface {
 	// ClearContentBounds restores full-window content.
 	SetContentBounds(left, top, right, bottom int32)
 	ClearContentBounds()
+
+	// SetDownloadHandler routes downloads through choose (see download.go); CancelDownload stops one.
+	SetDownloadHandler(choose func(DownloadInfo) string, progress func(DownloadProgress)) bool
+	CancelDownload(id int)
 }
