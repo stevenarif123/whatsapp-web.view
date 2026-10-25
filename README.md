@@ -25,6 +25,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **Chat ke nomor baru** (`Ctrl + N`): tanpa menyimpan kontak. `0812…` otomatis menjadi `62812…`.
 - **Catatan** (`Alt + N`): panel samping dengan banyak catatan, pencarian, dan simpan otomatis.
 - **Unduh status**: tombol unduh muncul saat Anda membuka status foto atau video.
+- **Pintasan clipboard standar**: `Ctrl C`, `Ctrl X`, `Ctrl V`, dan `Ctrl A` berfungsi normal.
 
 ### Tampilan
 - Tema **Standar gelap**, **OLED hitam**, dan **Layar hangat**.
