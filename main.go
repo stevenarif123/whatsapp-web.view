@@ -892,10 +892,29 @@ func switchToWhatsApp() {
 	}
 }
 
-func switchToTelegram() {
-	if globalTelegramWebView == nil {
-		initTelegramChild()
+// ensureTelegram creates the embedded Telegram view if needed and then runs then. A WebView2 controller
+// created while a WebView2 event handler runs (a page binding such as the dock buttons) never finishes
+// initialising, so creation always happens from the dispatch queue, after the current handler returned.
+func ensureTelegram(then func()) {
+	if globalTelegramWebView != nil || globalWebView == nil {
+		then()
+		return
 	}
+	globalWebView.Dispatch(func() {
+		if globalTelegramWebView == nil {
+			initTelegramChild()
+			// Creating the view runs its own message loop, which swallows queue wake-ups; wake it again.
+			globalWebView.Dispatch(func() {})
+		}
+		then()
+	})
+}
+
+func switchToTelegram() {
+	ensureTelegram(showTelegram)
+}
+
+func showTelegram() {
 	activeMessengerMode = "tg"
 	applyMessengerLayout(true)
 	if globalWebView != nil {
@@ -909,9 +928,10 @@ func switchToTelegram() {
 }
 
 func switchToSplitView() {
-	if globalTelegramWebView == nil {
-		initTelegramChild()
-	}
+	ensureTelegram(showSplitView)
+}
+
+func showSplitView() {
 	activeMessengerMode = "split"
 	applyMessengerLayout(true)
 	if globalWebView != nil {
@@ -1119,11 +1139,15 @@ func openExternalLink(rawURL string) {
 
 func main() {
 	// Optimize WebView2 / Chromium memory usage: limit V8 heap, expose GC, disable spare renderers & bound cache
-	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
-		"--js-flags=\"--expose-gc --max-old-space-size=256\" "+
-			"--disable-features=Translate,OptimizationHints,MediaRouter,SpareRendererForSitePerProcess "+
-			"--disk-cache-size=33554432 --media-cache-size=33554432 "+
-			"--renderer-process-limit=1")
+	// Arguments already set (tools/dev.ps1 adds --remote-debugging-port) are kept.
+	browserArgs := "--js-flags=\"--expose-gc --max-old-space-size=256\" " +
+		"--disable-features=Translate,OptimizationHints,MediaRouter,SpareRendererForSitePerProcess " +
+		"--disk-cache-size=33554432 --media-cache-size=33554432 " +
+		"--renderer-process-limit=1"
+	if extra := strings.TrimSpace(os.Getenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS")); extra != "" {
+		browserArgs += " " + extra
+	}
+	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS", browserArgs)
 
 	// Periodically trim memory and run V8 garbage collection every 3 minutes
 	go func() {
