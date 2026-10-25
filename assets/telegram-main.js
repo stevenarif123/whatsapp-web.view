@@ -192,18 +192,8 @@
 		setTimeout(injectTabs, 1500);
 		setTimeout(injectTabs, 3000);
 
-		// Continuous health-check interval to survive dynamic SPA DOM re-renders
-		setInterval(injectTabs, 1000);
-
-		// MutationObserver to immediately re-inject if Telegram replaces root DOM elements
-		try {
-			var observer = new MutationObserver(function() {
-				if (!document.getElementById('tg-messenger-tabs')) {
-					injectTabs();
-				}
-			});
-			observer.observe(document.documentElement, { childList: true, subtree: true });
-		} catch(e) {}
+		// Periodic health-check interval to survive dynamic SPA DOM re-renders
+		setInterval(injectTabs, 3000);
 
 		function showTgToast(msg) {
 			var root = document.documentElement || document.body;

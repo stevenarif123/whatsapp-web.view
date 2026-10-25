@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 	"unicode"
 	"unsafe"
 
@@ -80,6 +81,8 @@ var (
 	dwmapi               = windows.NewLazySystemDLL("dwmapi.dll")
 	shell32              = windows.NewLazySystemDLL("shell32.dll")
 	advapi32             = windows.NewLazySystemDLL("advapi32.dll")
+	psapi                = windows.NewLazySystemDLL("psapi.dll")
+	procEmptyWorkingSet  = psapi.NewProc("EmptyWorkingSet")
 	procCreateMutex      = kernel32.NewProc("CreateMutexW")
 	procFindWindow       = user32.NewProc("FindWindowW")
 	procSetFgWindow      = user32.NewProc("SetForegroundWindow")
@@ -538,6 +541,42 @@ func setWindowLongPtr(hwnd uintptr, index int, newLong uintptr) uintptr {
 	return r
 }
 
+func trimPID(pid uint32) {
+	h, err := windows.OpenProcess(windows.PROCESS_SET_QUOTA|windows.PROCESS_QUERY_INFORMATION, false, pid)
+	if err == nil {
+		defer windows.CloseHandle(h)
+		procEmptyWorkingSet.Call(uintptr(h))
+	}
+}
+
+func trimMemory() {
+	if globalWebView != nil {
+		globalWebView.Eval("if(window.gc){window.gc();}")
+	}
+	if globalTelegramWebView != nil {
+		globalTelegramWebView.Eval("if(window.gc){window.gc();}")
+	}
+	currentPID := uint32(os.Getpid())
+	trimPID(currentPID)
+
+	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
+	if err == nil {
+		defer windows.CloseHandle(snap)
+		var pe windows.ProcessEntry32
+		pe.Size = uint32(unsafe.Sizeof(pe))
+		if windows.Process32First(snap, &pe) == nil {
+			for {
+				if pe.ParentProcessID == currentPID {
+					trimPID(pe.ProcessID)
+				}
+				if windows.Process32Next(snap, &pe) != nil {
+					break
+				}
+			}
+		}
+	}
+}
+
 // notifyHidden tells the page the window was hidden, so it can lock itself if the user enabled that.
 func notifyHidden() {
 	if globalWebView != nil {
@@ -552,6 +591,7 @@ func customWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 			// Minimize to tray instead of quitting
 			procShowWindow.Call(hWnd, SW_HIDE)
 			notifyHidden()
+			trimMemory()
 			return 0
 		}
 	case WM_SIZE:
@@ -565,6 +605,7 @@ func customWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 			if visible != 0 && fg == hWnd {
 				procShowWindow.Call(hWnd, SW_HIDE)
 				notifyHidden()
+				trimMemory()
 			} else {
 				showMainWindow()
 				procSetFgWindow.Call(hWnd)
@@ -933,6 +974,7 @@ func telegramWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 	case WM_CLOSE:
 		if !forceQuit {
 			procShowWindow.Call(hWnd, SW_HIDE)
+			trimMemory()
 			return 0
 		}
 	case WM_HOTKEY:
@@ -948,6 +990,7 @@ func telegramWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 					procShowWindow.Call(hWA, SW_HIDE)
 				}
 				notifyHidden()
+				trimMemory()
 			} else {
 				procShowWindow.Call(hWnd, SW_RESTORE)
 				procSetFgWindow.Call(hWnd)
@@ -1093,6 +1136,21 @@ func openExternalLink(rawURL string) {
 }
 
 func main() {
+	// Optimize WebView2 / Chromium memory usage: limit V8 heap, expose GC, disable spare renderers & bound cache
+	os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
+		"--js-flags=\"--expose-gc --max-old-space-size=256\" "+
+			"--disable-features=Translate,OptimizationHints,MediaRouter,SpareRendererForSitePerProcess "+
+			"--disk-cache-size=33554432 --media-cache-size=33554432 "+
+			"--renderer-process-limit=1")
+
+	// Periodically trim memory and run V8 garbage collection every 3 minutes
+	go func() {
+		ticker := time.NewTicker(3 * time.Minute)
+		for range ticker.C {
+			trimMemory()
+		}
+	}()
+
 	isTelegram := false
 	profileID := "1"
 	startMinimized := false
@@ -1277,9 +1335,7 @@ func main() {
 
 	w.Init(initScript + "\n" + addonCoreJS)
 
-	// Initialize Telegram child webview before navigation begins
-	initTelegramChild()
-
+	// Note: Telegram child webview is lazily loaded on demand via switchToTelegram / switchToSplitView
 	w.Navigate(appURL)
 	w.Run()
 }
