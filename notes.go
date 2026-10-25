@@ -9,15 +9,21 @@ import (
 	"github.com/jchv/go-webview2"
 )
 
-// Notes (Alt+N) are stored here instead of in each page's localStorage, so the WhatsApp and Telegram
-// windows (and a second WhatsApp profile) show the same notes. The page owns the format; Go only checks
-// that it is JSON of a sane size.
+// Shared data: notes (Alt+N) and quick replies are stored here instead of in each page's localStorage,
+// so the WhatsApp and Telegram windows (and a second WhatsApp profile) use the same data. The pages own
+// the format; Go only checks that it is JSON of a sane size.
 
-const maxNotesSize = 4 << 20
+const maxSharedSize = 4 << 20
 
-var notesMu sync.Mutex
+// sharedFiles maps the names pages may use to their files in the config dir.
+var sharedFiles = map[string]string{
+	"notes":        "notes.json",
+	"quickReplies": "quick_replies.json",
+}
 
-func notesPath() string {
+var sharedMu sync.Mutex
+
+func sharedPath(name string) string {
 	configDir, err := os.UserConfigDir()
 	if err != nil {
 		configDir = os.Getenv("APPDATA")
@@ -27,27 +33,30 @@ func notesPath() string {
 	}
 	base := filepath.Join(configDir, "WhatsAppDesktopLight")
 	_ = os.MkdirAll(base, 0755)
-	return filepath.Join(base, "notes.json")
+	return filepath.Join(base, sharedFiles[name])
 }
 
-// getSharedNotes returns the stored notes JSON, or "" when there are none yet.
-func getSharedNotes() string {
-	notesMu.Lock()
-	defer notesMu.Unlock()
-	data, err := os.ReadFile(notesPath())
+// getShared returns the stored JSON for name, or "" when there is none yet.
+func getShared(name string) string {
+	if _, ok := sharedFiles[name]; !ok {
+		return ""
+	}
+	sharedMu.Lock()
+	defer sharedMu.Unlock()
+	data, err := os.ReadFile(sharedPath(name))
 	if err != nil || !json.Valid(data) {
 		return ""
 	}
 	return string(data)
 }
 
-func saveSharedNotes(raw string) bool {
-	if len(raw) > maxNotesSize || !json.Valid([]byte(raw)) {
+func saveShared(name, raw string) bool {
+	if _, ok := sharedFiles[name]; !ok || len(raw) > maxSharedSize || !json.Valid([]byte(raw)) {
 		return false
 	}
-	notesMu.Lock()
-	defer notesMu.Unlock()
-	p := notesPath()
+	sharedMu.Lock()
+	defer sharedMu.Unlock()
+	p := sharedPath(name)
 	tmp := p + ".tmp"
 	if os.WriteFile(tmp, []byte(raw), 0600) != nil {
 		return false
@@ -55,7 +64,14 @@ func saveSharedNotes(raw string) bool {
 	return os.Rename(tmp, p) == nil
 }
 
+func getSharedNotes() string                 { return getShared("notes") }
+func saveSharedNotes(raw string) bool        { return saveShared("notes", raw) }
+func getSharedQuickReplies() string          { return getShared("quickReplies") }
+func saveSharedQuickReplies(raw string) bool { return saveShared("quickReplies", raw) }
+
 func bindNotes(w webview2.WebView) {
 	_ = w.Bind("getSharedNotes", getSharedNotes)
 	_ = w.Bind("saveSharedNotes", saveSharedNotes)
+	_ = w.Bind("getSharedQuickReplies", getSharedQuickReplies)
+	_ = w.Bind("saveSharedQuickReplies", saveSharedQuickReplies)
 }

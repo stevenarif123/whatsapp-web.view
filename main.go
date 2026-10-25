@@ -43,6 +43,9 @@ var notifyJS string
 //go:embed assets/notes.js
 var notesJS string
 
+//go:embed assets/quickreplies.js
+var quickRepliesJS string
+
 // App icon (also the WhatsApp notification icon) and the Telegram notification icon. They are written
 // to the user config dir at startup so the app and its toasts do not depend on files next to the exe.
 //
@@ -1078,7 +1081,7 @@ func runTelegramWindow(userDataDir string, startMinimized bool) {
 }
 
 var telegramInitScript = "var WA_ADDON_CSS = " + jsString(addonCSS) + ";\n" +
-	strings.ReplaceAll(telegramMainJS, "__WA_USER_AGENT__", userAgent) + "\n" + notifyJS + "\n" + notesJS + "\n" + downloadsJS
+	strings.ReplaceAll(telegramMainJS, "__WA_USER_AGENT__", userAgent) + "\n" + notifyJS + "\n" + notesJS + "\n" + quickRepliesJS + "\n" + downloadsJS
 
 
 func sanitizeNotificationText(s string, maxLen int) string {
@@ -1314,7 +1317,7 @@ func main() {
 	initScript := "var WA_ADDON_CSS = " + jsString(addonCSS) + ";\nvar WA_CC_HTML = " + jsString(controlCenterHTML) + ";\n" +
 		strings.ReplaceAll(addonMainJS, "__WA_USER_AGENT__", userAgent)
 
-	w.Init(initScript + "\n" + addonCoreJS + "\n" + notifyJS + "\n" + notesJS + "\n" + downloadsJS)
+	w.Init(initScript + "\n" + addonCoreJS + "\n" + notifyJS + "\n" + notesJS + "\n" + quickRepliesJS + "\n" + downloadsJS)
 
 	// Note: Telegram child webview is lazily loaded on demand via switchToTelegram / switchToSplitView
 	w.Navigate(appURL)

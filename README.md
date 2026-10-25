@@ -20,7 +20,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **Blur per chat**: klik ikon mata di baris chat agar chat itu selalu buram (arahkan kursor untuk mengintip), tanpa menyalakan Mode Privasi untuk semuanya.
 - **Filter chat belum dibaca**: memakai chip "Belum dibaca" bawaan WhatsApp.
 - **Radar online**: toast dan notifikasi Windows saat kontak di chat yang sedang terbuka menjadi online atau mulai mengetik. Bisa dibatasi ke nama tertentu. *Catatan: WhatsApp hanya mengirim status online untuk chat yang sedang Anda buka, dan hanya jika kontak mengizinkannya.*
-- **Balasan cepat**: buat pintasan seperti `/toko`, ketik di chat, lalu tekan Tab, Enter, atau Spasi untuk mengembangkannya. Teks bisa memakai variabel `{nama}` (nama chat), `{depan}`, `{tanggal}`, `{hari}`, dan `{jam}`.
+- **Balasan cepat**: buat pintasan seperti `/toko`, ketik di chat, lalu tekan Tab, Enter, atau Spasi untuk mengembangkannya. Teks bisa memakai variabel `{nama}` (nama chat), `{depan}`, `{tanggal}`, `{hari}`, dan `{jam}`. Daftarnya sama di WhatsApp dan Telegram.
 - **Ekspor chat**: simpan pesan yang sudah termuat di chat terbuka sebagai berkas `.txt`.
 - **Chat ke nomor baru** (`Ctrl + N`): tanpa menyimpan kontak. `0812…` otomatis menjadi `62812…`.
 - **Catatan** (`Alt + N`): panel samping dengan banyak catatan, pencarian, dan simpan otomatis. Catatan yang sama muncul di WhatsApp dan Telegram.
@@ -93,11 +93,11 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 | `pinlock.go` | PIN kunci aplikasi: hash PBKDF2, hitungan PIN salah, dan jeda |
 | `downloads.go` | Dialog Save As untuk unduhan dan laporan progres ke halaman |
 | `notify.go` | Toast, klik notifikasi (protokol `wadesktoplight:` + `WM_COPYDATA`), jam tenang, chat dibisukan |
-| `notes.go` | Penyimpanan catatan bersama WhatsApp & Telegram |
+| `notes.go` | Penyimpanan bersama WhatsApp & Telegram: catatan dan balasan cepat |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
 | `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |
-| `assets/notify.js`, `assets/notes.js`, `assets/downloads.js` | Skrip bersama WhatsApp & Telegram: polyfill notifikasi, catatan, panel unduhan |
+| `assets/notify.js`, `assets/notes.js`, `assets/quickreplies.js`, `assets/downloads.js` | Skrip bersama WhatsApp & Telegram: polyfill notifikasi, catatan, sinkron balasan cepat, panel unduhan |
 | `assets/addon.css` | Design system: token warna, Pusat Kontrol, dock, toast, mode ringkas |
 | `assets/control-center.html` | Markup Pusat Kontrol |
 | `assets/preview.html` | Pratinjau Pusat Kontrol di browser tanpa menjalankan aplikasi |

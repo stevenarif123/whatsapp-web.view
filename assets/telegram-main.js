@@ -390,14 +390,15 @@
 					'</div>' +
 					'<div class="tg-qr-list">';
 
+				var escHtml = function(s) { return String(s).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 				for (var i = 0; i < tgQRMatches.length; i++) {
 					var it = tgQRMatches[i];
 					var isAct = (i === tgQRSelectedIndex);
 					var cleanSnippet = it.text.replace(/\n/g, ' ').substring(0, 56);
 					if (it.text.length > 56) cleanSnippet += '...';
 					html += '<div class="tg-qr-item ' + (isAct ? 'active' : '') + '" data-idx="' + i + '">' +
-						'<div class="tg-qr-item-key"><span>' + it.key + '</span></div>' +
-						'<div class="tg-qr-item-text">' + cleanSnippet + '</div>' +
+						'<div class="tg-qr-item-key"><span>' + escHtml(it.key) + '</span></div>' +
+						'<div class="tg-qr-item-text">' + escHtml(cleanSnippet) + '</div>' +
 						'</div>';
 				}
 				html += '</div>';

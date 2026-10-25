@@ -519,6 +519,8 @@
 
 		function saveQuickReplies(list) {
 			try { localStorage.setItem('wa_quick_replies', JSON.stringify(list)); } catch(e) {}
+			// Shared with Telegram through Go (quickreplies.js)
+			if (window.waPushQuickReplies) window.waPushQuickReplies(list);
 		}
 
 		function addQuickReply(key, text) {
@@ -782,14 +784,15 @@
 				'</div>' +
 				'<div class="wa-qr-list">';
 
+			var escHtml = function(s) { return String(s).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
 			for (var i = 0; i < waQRMatches.length; i++) {
 				var it = waQRMatches[i];
 				var isAct = (i === waQRSelectedIndex);
 				var cleanSnippet = it.text.replace(/\n/g, ' ').substring(0, 56);
 				if (it.text.length > 56) cleanSnippet += '...';
 				html += '<div class="wa-qr-item ' + (isAct ? 'active' : '') + '" data-idx="' + i + '">' +
-					'<div class="wa-qr-item-key"><span>' + it.key + '</span></div>' +
-					'<div class="wa-qr-item-text">' + cleanSnippet + '</div>' +
+					'<div class="wa-qr-item-key"><span>' + escHtml(it.key) + '</span></div>' +
+					'<div class="wa-qr-item-text">' + escHtml(cleanSnippet) + '</div>' +
 					'</div>';
 			}
 			html += '</div>';
@@ -1834,8 +1837,10 @@
 						var row = document.createElement('div');
 						row.className = 'wa-row';
 						row.style.cssText = 'background:var(--wa-bg);border:1px solid var(--wa-border);padding:6px 12px;border-radius:var(--wa-radius-sm);';
-						row.innerHTML = '<div style="display:flex;align-items:center;gap:8px;overflow:hidden;"><b style="color:var(--wa-primary);font-size:12px;font-family:monospace;">' + item.key + '</b><span style="color:var(--wa-text-muted);font-size:12px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;">' + (item.text.length > 32 ? item.text.substring(0,32) + '...' : item.text) + '</span></div>' +
+						row.innerHTML = '<div style="display:flex;align-items:center;gap:8px;overflow:hidden;"><b style="color:var(--wa-primary);font-size:12px;font-family:monospace;"></b><span style="color:var(--wa-text-muted);font-size:12px;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;"></span></div>' +
 							'<button class="wa-del-qr wa-close-btn" style="width:24px;height:24px;color:var(--wa-danger);" title="Hapus shortcut"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+						row.querySelector('b').textContent = item.key;
+						row.querySelector('span').textContent = item.text.length > 32 ? item.text.substring(0, 32) + '...' : item.text;
 						var delBtn = row.querySelector('.wa-del-qr');
 						if (delBtn) {
 							delBtn.onclick = function() {
