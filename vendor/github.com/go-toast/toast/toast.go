@@ -169,6 +169,14 @@ type Notification struct {
 
 	// How long the toast should show up for (short/long)
 	Duration toastDuration
+
+	// Tag and Group identify the toast: a new toast with the same Tag and Group replaces the old one
+	// instead of adding another. Added for whatsapp-desktop.
+	Tag   string
+	Group string
+
+	// SuppressPopup puts the toast in the Action Center without showing it on screen.
+	SuppressPopup bool
 }
 
 // Action
@@ -237,7 +245,7 @@ func (n *Notification) Push() error {
 	if appID == "" {
 		appID = "Windows App"
 	}
-	return invokePowerShellToast(appID, xml)
+	return invokePowerShellToast(appID, xml, n.Tag, n.Group, n.SuppressPopup)
 }
 
 // Returns a toastAudio given a user-provided input (useful for cli apps).
@@ -338,9 +346,15 @@ func Duration(name string) (toastDuration, error) {
 	}
 }
 
-func invokePowerShellToast(appID, xmlStr string) error {
+func invokePowerShellToast(appID, xmlStr, tag, group string, suppressPopup bool) error {
 	appIdB64 := base64.StdEncoding.EncodeToString([]byte(appID))
 	xmlB64 := base64.StdEncoding.EncodeToString([]byte(xmlStr))
+	tagB64 := base64.StdEncoding.EncodeToString([]byte(tag))
+	groupB64 := base64.StdEncoding.EncodeToString([]byte(group))
+	suppress := "$false"
+	if suppressPopup {
+		suppress = "$true"
+	}
 
 	script := fmt.Sprintf(`$ProgressPreference = 'SilentlyContinue'
 [Windows.UI.Notifications.ToastNotificationManager, Windows.UI.Notifications, ContentType = WindowsRuntime] | Out-Null
@@ -352,8 +366,13 @@ $xmlText = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64St
 $xml = New-Object Windows.Data.Xml.Dom.XmlDocument
 $xml.LoadXml($xmlText)
 $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
+$tag = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('%s'))
+$group = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('%s'))
+if ($tag) { $toast.Tag = $tag }
+if ($group) { $toast.Group = $group }
+$toast.SuppressPopup = %s
 [Windows.UI.Notifications.ToastNotificationManager]::CreateToastNotifier($appId).Show($toast)
-`, appIdB64, xmlB64)
+`, appIdB64, xmlB64, tagB64, groupB64, suppress)
 
 	utf16 := utf16.Encode([]rune(script))
 	buf := make([]byte, len(utf16)*2)
@@ -369,5 +388,5 @@ $toast = New-Object Windows.UI.Notifications.ToastNotification $xml
 }
 
 func invokeTemporaryScript(content string) error {
-	return invokePowerShellToast("Windows App", content)
+	return invokePowerShellToast("Windows App", content, "", "", false)
 }

@@ -26,10 +26,13 @@ import (
 // (handleActivation). The settings are shared by WhatsApp and Telegram.
 
 const (
-	notifyProtocol = "wadesktoplight"
-	copyDataMagic  = 0x57414131 // "WAA1", marks our WM_COPYDATA messages
-	WM_COPYDATA    = 0x004A
-	ASFW_ANY       = 0xFFFFFFFF
+	notifyProtocol         = "wadesktoplight"
+	copyDataMagic          = 0x57414131 // "WAA1", marks our WM_COPYDATA messages
+	WM_COPYDATA            = 0x004A
+	WM_POWERBROADCAST      = 0x0218
+	PBT_APMRESUMESUSPEND   = 0x0007
+	PBT_APMRESUMEAUTOMATIC = 0x0012
+	ASFW_ANY               = 0xFFFFFFFF
 )
 
 var (
@@ -167,17 +170,12 @@ func showNativeNotification(app, appID, title, message, iconPath string, id int)
 	if inQuietHours(s, time.Now()) || isMuted(s, title) {
 		return
 	}
-	var actions []toast.Action
-	if id > 0 && title != "" {
-		actions = []toast.Action{
-			{Type: "protocol", Label: "Bisukan chat ini", Arguments: activationURI("mute", app, id, title)},
-		}
-	}
-	pushToast(app, appID, title, message, iconPath, activationURI("open", app, id, title), actions)
+	queueToast(toastReq{app: app, appID: appID, title: title, message: message, icon: iconPath, id: id})
 }
 
 // pushToast shows a toast that opens launchURI when clicked. It ignores quiet hours and muted chats.
-func pushToast(app, appID, title, message, iconPath, launchURI string, actions []toast.Action) {
+// A toast with the same tag and group replaces the previous one; silent puts it only in the Action Center.
+func pushToast(app, appID, title, message, iconPath, launchURI string, actions []toast.Action, tag, group string, silent bool) {
 	title = sanitizeNotificationText(title, 128)
 	message = sanitizeNotificationText(message, 512)
 	if title == "" && message == "" {
@@ -191,6 +189,9 @@ func pushToast(app, appID, title, message, iconPath, launchURI string, actions [
 		ActivationType:      "protocol",
 		ActivationArguments: launchURI,
 		Actions:             actions,
+		Tag:                 tag,
+		Group:               group,
+		SuppressPopup:       silent,
 	}
 	_ = notification.Push()
 }

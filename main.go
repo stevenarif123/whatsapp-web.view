@@ -605,6 +605,10 @@ func notifyHidden() {
 
 func customWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 	switch uint32(msg) {
+	case WM_POWERBROADCAST:
+		if wParam == PBT_APMRESUMEAUTOMATIC || wParam == PBT_APMRESUMESUSPEND {
+			markResumed()
+		}
 	case WM_COPYDATA:
 		if uri := readCopyData(lParam); uri != "" {
 			handleActivation(uri)
@@ -985,6 +989,10 @@ func setTelegramDarkWindowFrame(hwnd uintptr) {
 
 func telegramWndProc(hWnd, msg, wParam, lParam uintptr) uintptr {
 	switch uint32(msg) {
+	case WM_POWERBROADCAST:
+		if wParam == PBT_APMRESUMEAUTOMATIC || wParam == PBT_APMRESUMESUSPEND {
+			markResumed()
+		}
 	case WM_COPYDATA:
 		if uri := readCopyData(lParam); uri != "" {
 			handleActivation(uri)

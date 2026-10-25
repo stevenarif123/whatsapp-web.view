@@ -13,6 +13,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/go-toast/toast"
 	"github.com/jchv/go-webview2"
 )
 
@@ -176,7 +177,8 @@ func bindReminders(w webview2.WebView, iconPath string) {
 			if due := takeDueReminders(now); len(due) > 0 {
 				for _, r := range due {
 					title, message := reminderToast(r, now)
-					pushToast("wa", waToastAppID, title, message, iconPath, activationChatURI(r.Chat), nil)
+					pushToast("wa", waToastAppID, title, message, iconPath, activationChatURI(r.Chat),
+						[]toast.Action{dismissAction()}, "r"+r.ID, "reminder", false)
 				}
 				w.Dispatch(func() { send(listReminders()) })
 			}
