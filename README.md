@@ -32,8 +32,8 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 ### Tampilan
 - Tema **Standar gelap**, **OLED hitam**, dan **Layar hangat**.
 - **Daftar chat rapat**.
-- **Mode ringkas di jendela sempit**: di bawah ±900 px (misalnya dibagi dua dengan aplikasi lain) WhatsApp Web biasanya terpotong karena lebar minimumnya 748 px dan di bawah ±900 px panel chat masih terlalu sempit sehingga bubble dan gambar terpotong. Aplikasi ini menampilkan satu panel saja: daftar chat, atau chat yang dibuka dengan tombol kembali (`‹`), seperti aplikasi native.
-- **Zoom** 75-150% (`Ctrl +` / `Ctrl -` / `Ctrl 0`). Memakai CSS `zoom`, yang kadang mengganggu tata letak daftar pesan; kembalikan ke 100% bila ada yang aneh.
+- **Mode ringkas di jendela sempit**: di bawah ±900 px (misalnya dibagi dua dengan aplikasi lain) WhatsApp Web biasanya terpotong karena lebar minimumnya 748 px dan di bawah ±900 px panel chat masih terlalu sempit sehingga bubble dan gambar terpotong. Aplikasi ini menampilkan satu panel saja: daftar chat, atau chat yang dibuka dengan tombol kembali (`‹`), seperti aplikasi native. Di jendela sedang, daftar chat dibatasi 300–420 px (sekitar 30%, bukan 40% seperti WhatsApp Web) supaya panel chat lebih lega.
+- **Zoom** 75-150% (`Ctrl +` / `Ctrl -` / `Ctrl 0` atau `Ctrl` + scroll). Memakai zoom bawaan browser (WebView2), sehingga WhatsApp menyusun ulang tata letaknya di setiap ukuran dan tidak ada yang terpotong.
 - **Kecepatan voice note** 0.5×-3.0× (`[` dan `]`).
 - **Picture-in-Picture** untuk video (`Alt + V`).
 

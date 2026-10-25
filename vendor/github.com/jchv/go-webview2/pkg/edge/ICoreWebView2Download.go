@@ -5,6 +5,7 @@ package edge
 // WebView2.h of the WebView2 SDK.
 
 import (
+	"math"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -211,9 +212,11 @@ func (i *ICoreWebView2DownloadOperation) int32Prop(proc ComProc) int32 {
 	return v
 }
 
-func (i *ICoreWebView2DownloadOperation) Uri() string            { return i.stringProp(i.vtbl.GetUri) }
-func (i *ICoreWebView2DownloadOperation) MimeType() string       { return i.stringProp(i.vtbl.GetMimeType) }
-func (i *ICoreWebView2DownloadOperation) ResultFilePath() string { return i.stringProp(i.vtbl.GetResultFilePath) }
+func (i *ICoreWebView2DownloadOperation) Uri() string      { return i.stringProp(i.vtbl.GetUri) }
+func (i *ICoreWebView2DownloadOperation) MimeType() string { return i.stringProp(i.vtbl.GetMimeType) }
+func (i *ICoreWebView2DownloadOperation) ResultFilePath() string {
+	return i.stringProp(i.vtbl.GetResultFilePath)
+}
 
 // TotalBytesToReceive is -1 when the size is unknown.
 func (i *ICoreWebView2DownloadOperation) TotalBytesToReceive() int64 {
@@ -343,4 +346,25 @@ func (e *Chromium) AddDownloadStarting(h *DownloadStartingEventHandler) bool {
 	var token EventToken
 	hr, _, _ := wv4.vtbl.AddDownloadStarting.Call(uintptr(unsafe.Pointer(wv4)), uintptr(unsafe.Pointer(h)), uintptr(unsafe.Pointer(&token)))
 	return int32(hr) >= 0
+}
+
+// Zoom (ICoreWebView2Controller.ZoomFactor). Unlike CSS zoom, this is the browser's own zoom: the page
+// lays itself out again for the smaller or larger viewport. Added for whatsapp-desktop.
+
+func (i *ICoreWebView2Controller) PutZoomFactor(factor float64) error {
+	// Windows x64 passes the double in XMM1; Go's stdcall bridge loads the argument registers into XMM too.
+	hr, _, _ := i.vtbl.PutZoomFactor.Call(uintptr(unsafe.Pointer(i)), uintptr(math.Float64bits(factor)))
+	if int32(hr) < 0 {
+		return windows.Errno(hr)
+	}
+	return nil
+}
+
+func (i *ICoreWebView2Controller) GetZoomFactor() (float64, error) {
+	var factor float64
+	hr, _, _ := i.vtbl.GetZoomFactor.Call(uintptr(unsafe.Pointer(i)), uintptr(unsafe.Pointer(&factor)))
+	if int32(hr) < 0 {
+		return 0, windows.Errno(hr)
+	}
+	return factor, nil
 }

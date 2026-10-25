@@ -1293,6 +1293,14 @@ func main() {
 	enableDownloads(w, hwnd)
 	bindNotes(w)
 
+	// Zoom uses the browser's own zoom so WhatsApp lays itself out again (CSS zoom cuts content off)
+	_ = w.Bind("setNativeZoom", func(percent float64) float64 {
+		if percent < 50 || percent > 200 {
+			return 0
+		}
+		return w.SetZoomFactor(percent/100) * 100
+	})
+
 	// Settings backup, reply reminders and the update check
 	bindBackup(w, hwnd)
 	bindReminders(w, iconFullPath)

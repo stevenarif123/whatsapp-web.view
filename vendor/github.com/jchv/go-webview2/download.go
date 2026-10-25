@@ -145,3 +145,15 @@ func (w *webview) CancelDownload(id int) {
 		d.op.Cancel()
 	}
 }
+
+// SetZoomFactor sets the browser zoom (1.0 = 100%) and reports the factor now in effect.
+func (w *webview) SetZoomFactor(factor float64) float64 {
+	c, ok := w.browser.(*edge.Chromium)
+	if !ok || c.GetController() == nil {
+		return 0
+	}
+	ctl := c.GetController()
+	_ = ctl.PutZoomFactor(factor)
+	got, _ := ctl.GetZoomFactor()
+	return got
+}

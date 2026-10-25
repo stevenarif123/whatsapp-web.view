@@ -415,11 +415,20 @@
 				if (isNaN(currentZoom) || currentZoom < 75 || currentZoom > 150) currentZoom = 100;
 			} catch(e) {}
 
+			// The browser's own zoom (via Go) lets WhatsApp lay itself out again for the new size; CSS zoom
+			// only scales the drawing and cuts content off. CSS zoom is the fallback without the binding.
+			function setZoom(level) {
+				if (window.setNativeZoom) {
+					if (document.body) document.body.style.zoom = '';
+					window.setNativeZoom(level);
+				} else if (document.body) {
+					document.body.style.zoom = level + '%';
+				}
+			}
+
 			applyZoom = function(val) {
 				currentZoom = Math.min(150, Math.max(75, val));
-				if (document.body) {
-					document.body.style.zoom = currentZoom + '%';
-				}
+				setZoom(currentZoom);
 				try {
 					localStorage.setItem('wa_zoom_level', currentZoom.toString());
 				} catch(e) {}
@@ -429,10 +438,15 @@
 			};
 
 			whenDOMReady(function() {
-				if (document.body) {
-					document.body.style.zoom = currentZoom + '%';
-				}
+				setZoom(currentZoom);
 			});
+
+			// Ctrl + mouse wheel goes through the same zoom so the saved level stays right
+			window.addEventListener('wheel', function(e) {
+				if (!e.ctrlKey) return;
+				e.preventDefault();
+				applyZoom(currentZoom + (e.deltaY < 0 ? 5 : -5));
+			}, { passive: false, capture: true });
 
 			window.addEventListener('keydown', function(e) {
 				if (e.ctrlKey || e.metaKey) {

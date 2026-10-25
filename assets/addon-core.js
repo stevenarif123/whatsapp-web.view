@@ -465,7 +465,9 @@
 		}
 		var open = document.getElementById('main') ? '1' : '0';
 		if (document.body.getAttribute('data-wa-chat-open') !== open) document.body.setAttribute('data-wa-chat-open', open);
-		if (narrow) { markLayout(); ensureBackButton(); }
+		// The panes are marked in every width: the two-pane layout also uses them (addon.css)
+		markLayout();
+		if (narrow) ensureBackButton();
 	}
 	window.waSyncNarrow = syncNarrow;
 

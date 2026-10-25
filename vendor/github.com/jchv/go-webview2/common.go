@@ -90,4 +90,7 @@ type WebView interface {
 	// SetDownloadHandler routes downloads through choose (see download.go); CancelDownload stops one.
 	SetDownloadHandler(choose func(DownloadInfo) string, progress func(DownloadProgress)) bool
 	CancelDownload(id int)
+
+	// SetZoomFactor sets the browser zoom (1.0 = 100%) and returns the factor in effect.
+	SetZoomFactor(factor float64) float64
 }

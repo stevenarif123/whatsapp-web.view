@@ -250,6 +250,13 @@ body[data-wa-open-blur="1"] #main [data-testid="image-thumb"]:hover { filter: no
 .wa-blur-toggle.on { color: var(--wa-primary-text); border-color: var(--wa-primary); }
 
 /* ---------- Compact layout (narrow windows) ---------- */
+/* Two panes: WhatsApp gives the chat list 40% of the window up to ~1440px, which leaves the chat cramped
+   in medium windows. Keep the list between 300 and 420px (about 30%), as Telegram and the native apps do. */
+html:not([data-wa-narrow]) [data-wa-pane="list"] { flex: 0 0 clamp(300px, 30%, 420px) !important; max-width: clamp(300px, 30%, 420px) !important; min-width: 0 !important; }
+html:not([data-wa-narrow]) [data-wa-pane="chat"] { min-width: 0 !important; }
+/* WhatsApp's slide-in drawers (settings, new chat, ...) sit in their own layer sized 40/60; align them with the panes. */
+html:not([data-wa-narrow]) [data-testid="drawer-left"] { flex: 0 0 clamp(300px, 30%, 420px) !important; max-width: clamp(300px, 30%, 420px) !important; width: auto !important; }
+html:not([data-wa-narrow]) [data-testid="drawer-middle"] { flex: 1 1 0 !important; max-width: none !important; min-width: 0 !important; width: auto !important; }
 html[data-wa-narrow] [data-wa-layout="root"] { min-width: 0 !important; width: 100% !important; }
 html[data-wa-narrow] [data-wa-pane="list"],
 html[data-wa-narrow] [data-wa-pane="chat"] { flex: 1 1 0 !important; max-width: none !important; min-width: 0 !important; width: auto !important; }
