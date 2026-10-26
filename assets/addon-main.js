@@ -382,6 +382,7 @@
 				showAddonToast('Membuka chat: +' + cleaned + '...');
 				window.location.href = 'https://web.whatsapp.com/send?phone=' + cleaned;
 			};
+			window.waOpenChatByNumber = openDirectChatByNumber; // used by wa-tools.js
 
 			window.openDirectChatModal = function() {
 				whenDOMReady(function() {
@@ -659,6 +660,7 @@
 			} catch (err) {}
 			if (!handled) document.execCommand('insertText', false, text);
 		}
+		window.waInsertIntoEditor = insertIntoEditor; // used by wa-tools.js
 
 		var waQRLastApply = 0;
 

@@ -29,6 +29,7 @@ var backupPageKeys = []string{
 	"wa_privacy_config", "wa_eye_comfort_config", "wa_zoom_level", "wa_audio_speed",
 	"wa_pins_enabled", "wa_pinned_chats", "wa_blur_chats", "wa_radar_config",
 	"wa_compact_narrow", "wa_lock_on_hide",
+	"wa_label_defs", "wa_chat_labels", "wa_contact_notes",
 }
 
 var procGetOpenFile = comdlg32.NewProc("GetOpenFileNameW")

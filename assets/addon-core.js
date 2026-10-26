@@ -538,8 +538,10 @@
 		});
 	};
 
-	// Used by notify.js when a toast is clicked but the page registered no click handler.
+	// Used by notify.js when a toast is clicked but the page registered no click handler, and by wa-tools.js.
 	window.waOpenChatByName = openChatByName;
+	window.waRowName = rowName;
+	window.waOpenChatName = openChatName;
 
 	// Quiet hours and muted chats live in Go (shared with Telegram); this renders them in the Control Center.
 	var notifyCache = null;
@@ -914,6 +916,11 @@
 		};
 		if (exportSetBtn) exportSetBtn.onclick = function () { window.waExportSettings(); };
 		if (importSetBtn) importSetBtn.onclick = function () { window.waImportSettings(); };
+		var labelBtn = modal.querySelector('#wa-cc-label-btn');
+		if (labelBtn) labelBtn.onclick = function () {
+			modal.style.display = 'none';
+			if (window.waOpenLabelEditor) window.waOpenLabelEditor();
+		};
 		if (remindBtn) remindBtn.onclick = function () {
 			modal.style.display = 'none';
 			window.waOpenReminder();
@@ -954,6 +961,7 @@
 				renderMuteList();
 			});
 			loadReminders();
+			if (typeof window.waRenderLabelManager === 'function') window.waRenderLabelManager();
 			if (typeof window.getUpdateSettings === 'function') window.getUpdateSettings().then(function (u) {
 				var v = document.getElementById('wa-app-version');
 				if (v) v.textContent = 'v' + u.current;

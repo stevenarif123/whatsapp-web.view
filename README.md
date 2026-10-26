@@ -21,6 +21,9 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **Filter chat belum dibaca**: memakai chip "Belum dibaca" bawaan WhatsApp.
 - **Radar online**: toast dan notifikasi Windows saat kontak di chat yang sedang terbuka menjadi online atau mulai mengetik. Bisa dibatasi ke nama tertentu. *Catatan: WhatsApp hanya mengirim status online untuk chat yang sedang Anda buka, dan hanya jika kontak mengizinkannya.*
 - **Balasan cepat**: buat pintasan seperti `/toko`, ketik di chat, lalu tekan Tab, Enter, atau Spasi untuk mengembangkannya. Teks bisa memakai variabel `{nama}` (nama chat), `{depan}`, `{tanggal}`, `{hari}`, dan `{jam}`. Daftarnya sama di WhatsApp dan Telegram.
+- **Label & catatan kontak** (`Alt + K`): beri label berwarna ke chat (Pelanggan, Belum bayar, Sudah kirim, Penting, atau buat sendiri di Pusat Kontrol) dan catatan per kontak. Label tampil sebagai titik di daftar chat dan sebagai tombol di atas daftar untuk menemukan chat berlabel; label dan catatan chat yang terbuka tampil di atas percakapan. Tersimpan lokal dan ikut cadangan pengaturan.
+- **Nomor telepon di pesan bisa diklik**: nomor seperti `0812-3456-7890` atau `+62 813…` di isi pesan diberi garis bawah; klik untuk chat ke nomor itu atau menyalinnya. Nominal, tanggal, dan kode pesanan tidak ikut ditandai. Teks pesan WhatsApp tidak diubah (memakai CSS Custom Highlight).
+- **Toolbar format**: seleksi teks di kotak ketik untuk memformatnya dengan format bawaan WhatsApp: tebal, miring, coret, monospace, kode, kutipan, daftar berbutir, dan daftar bernomor. Klik lagi untuk melepas format.
 - **Pengingat balas** (`Alt + R` atau tombol Ingatkan di dock): pilih 30 menit, 1 jam, 3 jam, besok 09.00, atau waktu sendiri, plus catatan opsional. Pada waktunya muncul notifikasi; klik untuk langsung membuka chatnya. Pengingat yang terlewat saat aplikasi tertutup muncul begitu aplikasi dibuka. Semuanya tersimpan di komputer ini, tidak ada yang dikirim ke WhatsApp.
 - **Ekspor chat**: simpan pesan yang sudah termuat di chat terbuka sebagai berkas `.txt`.
 - **Chat ke nomor baru** (`Ctrl + N`): tanpa menyimpan kontak. `0812…` otomatis menjadi `62812…`.
@@ -66,6 +69,7 @@ Fitur berikut **tidak ada** di aplikasi ini: menyembunyikan centang biru, anti-h
 | `Alt + P` | Mode Privasi on / off |
 | `Alt + N` | Catatan tempel |
 | `Alt + R` | Pengingat balas untuk chat yang terbuka |
+| `Alt + K` | Label & catatan untuk chat yang terbuka |
 | `Alt + V` | Picture-in-Picture video |
 | `Ctrl + N` | Chat ke nomor baru |
 | `Ctrl + L` | Kunci aplikasi |
@@ -117,6 +121,7 @@ Membangun rilis di komputer sendiri juga bisa: `powershell -ExecutionPolicy Bypa
 | `backup.go` | Ekspor & impor pengaturan |
 | `reminders.go` | Pengingat balas |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
+| `assets/wa-tools.js` | Nomor telepon yang bisa diklik, toolbar format, label & catatan kontak |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
 | `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |
 | `assets/notify.js`, `assets/notes.js`, `assets/quickreplies.js`, `assets/downloads.js` | Skrip bersama WhatsApp & Telegram: polyfill notifikasi, catatan, sinkron balasan cepat, panel unduhan |
