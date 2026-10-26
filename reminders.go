@@ -170,6 +170,22 @@ func bindReminders(w webview2.WebView, iconPath string) {
 		return map[string]interface{}{"ok": true, "list": list}
 	})
 	_ = w.Bind("deleteReminder", deleteReminder)
+	// "Belum dibalas" (assets/followup.js): a chat waited too long for an answer. Unlike reminders this
+	// one follows quiet hours and muted chats; one toast per chat replaces the previous one.
+	_ = w.Bind("notifyFollowUp", func(chat, message string) {
+		s := getNotifySettings()
+		if inQuietHours(s, time.Now()) || (chat != "" && isMuted(s, chat)) {
+			return
+		}
+		if chat == "" {
+			// Several chats at once: one summary that opens the app
+			go pushToast("wa", waToastAppID, "⏳ Belum dibalas", message, iconPath, activationURI("open", "wa", 0, ""),
+				[]toast.Action{dismissAction()}, "summary", "followup", false)
+			return
+		}
+		go pushToast("wa", waToastAppID, "⏳ Belum dibalas: "+chat, message, iconPath, activationChatURI(chat),
+			[]toast.Action{dismissAction()}, "u"+chatTag(chat), "followup", false)
+	})
 
 	go func() {
 		for {

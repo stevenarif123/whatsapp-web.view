@@ -265,6 +265,38 @@
       </div>
 
       <div class="wa-section">
+        <div class="wa-section-label">Belum dibalas</div>
+        <div class="wa-group">
+          <div class="wa-row">
+            <div class="wa-row-text">
+              <div class="wa-row-title">Ingatkan chat yang belum dibalas <span id="wa-followup-count" class="wa-tag" style="margin-left:6px;">0</span></div>
+              <div class="wa-row-desc">Chat yang pesan terakhirnya dari lawan bicara dan belum Anda balas. Tampil di tombol Balas pada dock; chat yang di-mute tidak dihitung.</div>
+            </div>
+            <label class="wa-switch"><input type="checkbox" id="wa-cc-followup-cb"><span class="wa-slider"></span></label>
+          </div>
+          <div class="wa-row">
+            <div class="wa-row-text"><div class="wa-row-title">Dianggap belum dibalas setelah</div></div>
+            <select id="wa-cc-followup-min" class="wa-input" style="width:120px;">
+              <option value="15">15 menit</option>
+              <option value="30">30 menit</option>
+              <option value="60">1 jam</option>
+              <option value="180">3 jam</option>
+              <option value="1440">1 hari</option>
+            </select>
+          </div>
+          <div class="wa-row">
+            <div class="wa-row-text"><div class="wa-row-title">Kirim notifikasi</div><div class="wa-row-desc">Sekali per chat saat melewati batas waktu; klik untuk membuka chatnya.</div></div>
+            <label class="wa-switch"><input type="checkbox" id="wa-cc-followup-notify"><span class="wa-slider"></span></label>
+          </div>
+          <div class="wa-row">
+            <div class="wa-row-text"><div class="wa-row-title">Sertakan grup</div></div>
+            <label class="wa-switch"><input type="checkbox" id="wa-cc-followup-groups"><span class="wa-slider"></span></label>
+          </div>
+          <div id="wa-followup-list"></div>
+        </div>
+      </div>
+
+      <div class="wa-section">
         <div class="wa-section-label">Label &amp; catatan kontak</div>
         <div class="wa-group">
           <div class="wa-row">

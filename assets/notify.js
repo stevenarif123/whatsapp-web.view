@@ -23,6 +23,11 @@
 		order.push(id);
 		if (order.length > 100) delete recent[order.shift()];
 
+		// Lets followup.js see incoming messages for chats that are not on screen
+		if (typeof window.waOnNotification === 'function') {
+			try { window.waOnNotification(String(title || ''), String(this.body)); } catch(e) {}
+		}
+
 		if (window.sendNativeNotificationEx) {
 			window.sendNativeNotificationEx(String(title || ''), String(this.body), id);
 		} else if (window.sendNativeNotification) {

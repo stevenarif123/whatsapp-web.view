@@ -962,6 +962,7 @@
 			});
 			loadReminders();
 			if (typeof window.waRenderLabelManager === 'function') window.waRenderLabelManager();
+			if (typeof window.waRenderFollowUp === 'function') window.waRenderFollowUp();
 			if (typeof window.getUpdateSettings === 'function') window.getUpdateSettings().then(function (u) {
 				var v = document.getElementById('wa-app-version');
 				if (v) v.textContent = 'v' + u.current;

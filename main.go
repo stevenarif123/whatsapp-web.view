@@ -52,6 +52,9 @@ var waToolsJS string
 //go:embed assets/watchdog.js
 var watchdogJS string
 
+//go:embed assets/followup.js
+var followupJS string
+
 // App icon and the toast icons, all made from the official logos by tools/make_icons.py. They are
 // written to the user config dir at startup so the app and its toasts do not depend on files next to the exe.
 //
@@ -1320,7 +1323,7 @@ func main() {
 	initScript := "var WA_ADDON_CSS = " + jsString(addonCSS) + ";\nvar WA_CC_HTML = " + jsString(controlCenterHTML) + ";\n" +
 		strings.ReplaceAll(addonMainJS, "__WA_USER_AGENT__", userAgent)
 
-	w.Init(initScript + "\n" + addonCoreJS + "\n" + waToolsJS + "\n" + watchdogJS + "\n" + notifyJS + "\n" + notesJS + "\n" + quickRepliesJS + "\n" + downloadsJS)
+	w.Init(initScript + "\n" + addonCoreJS + "\n" + waToolsJS + "\n" + watchdogJS + "\n" + followupJS + "\n" + notifyJS + "\n" + notesJS + "\n" + quickRepliesJS + "\n" + downloadsJS)
 
 	// Note: Telegram child webview is lazily loaded on demand via switchToTelegram / switchToSplitView
 	w.Navigate(appURL)

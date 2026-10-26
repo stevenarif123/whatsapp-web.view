@@ -21,6 +21,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 - **Filter chat belum dibaca**: memakai chip "Belum dibaca" bawaan WhatsApp.
 - **Radar online**: toast dan notifikasi Windows saat kontak di chat yang sedang terbuka menjadi online atau mulai mengetik. Bisa dibatasi ke nama tertentu. *Catatan: WhatsApp hanya mengirim status online untuk chat yang sedang Anda buka, dan hanya jika kontak mengizinkannya.*
 - **Balasan cepat**: buat pintasan seperti `/toko`, ketik di chat, lalu tekan Tab, Enter, atau Spasi untuk mengembangkannya. Teks bisa memakai variabel `{nama}` (nama chat), `{depan}`, `{tanggal}`, `{hari}`, dan `{jam}`. Daftarnya sama di WhatsApp dan Telegram.
+- **Belum dibalas**: tombol **Balas (N)** di dock menampilkan chat yang pesan terakhirnya dari lawan bicara dan belum Anda balas lebih dari batas waktu (15 menit sampai 1 hari, bawaan 1 jam), dengan tombol Buka dan Abaikan. Satu notifikasi per chat saat melewati batas (beberapa sekaligus digabung jadi satu ringkasan; tunggakan lama saat aplikasi baru dibuka tidak memicu notifikasi). Chat yang di-mute, grup (bisa disertakan), dan tunggakan lebih dari 3 hari tidak dihitung. Diatur di Pusat Kontrol > Chat & alat.
 - **Label & catatan kontak** (`Alt + K`): beri label berwarna ke chat (Pelanggan, Belum bayar, Sudah kirim, Penting, atau buat sendiri di Pusat Kontrol) dan catatan per kontak. Label tampil sebagai titik di daftar chat dan sebagai tombol di atas daftar untuk menemukan chat berlabel; label dan catatan chat yang terbuka tampil di atas percakapan. Tersimpan lokal dan ikut cadangan pengaturan.
 - **Nomor telepon di pesan bisa diklik**: nomor seperti `0812-3456-7890` atau `+62 813…` di isi pesan diberi garis bawah; klik untuk chat ke nomor itu atau menyalinnya. Nominal, tanggal, dan kode pesanan tidak ikut ditandai. Teks pesan WhatsApp tidak diubah (memakai CSS Custom Highlight).
 - **Toolbar format**: seleksi teks di kotak ketik untuk memformatnya dengan format bawaan WhatsApp: tebal, miring, coret, monospace, kode, kutipan, daftar berbutir, dan daftar bernomor. Klik lagi untuk melepas format.
@@ -122,6 +123,7 @@ Membangun rilis di komputer sendiri juga bisa: `powershell -ExecutionPolicy Bypa
 | `backup.go` | Ekspor & impor pengaturan |
 | `reminders.go` | Pengingat balas |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
+| `assets/followup.js` | Daftar chat yang belum dibalas |
 | `watchdog.go`, `assets/watchdog.js` | Pulih otomatis saat WhatsApp Web macet |
 | `assets/wa-tools.js` | Nomor telepon yang bisa diklik, toolbar format, label & catatan kontak |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
