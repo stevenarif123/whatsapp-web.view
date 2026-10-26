@@ -1,0 +1,60 @@
+# Publishes a release when a version tag is pushed:
+#
+#   git tag v1.2.0
+#   git push origin v1.2.0
+#
+# GitHub builds WhatsApp.exe with that version embedded, writes WhatsApp.exe.sha256 and creates the
+# release with both files, which is what the in-app updater ("Perbarui sekarang") installs.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    env:
+      CGO_ENABLED: "0"
+      GOFLAGS: -mod=vendor
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: actions/setup-go@v7.0.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      - name: Version from tag
+        id: version
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag $GITHUB_REF_NAME is not vX.Y.Z" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Test
+        run: go test -count=1 .
+
+      - name: Build
+        run: go build -ldflags="-H windowsgui -s -w -X main.appVersion=${{ steps.version.outputs.version }}" -o WhatsApp.exe .
+
+      - name: Checksum
+        shell: bash
+        run: |
+          sha256sum WhatsApp.exe | awk '{print $1 "  WhatsApp.exe"}' > WhatsApp.exe.sha256
+          cat WhatsApp.exe.sha256
+
+      - name: Create release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" WhatsApp.exe WhatsApp.exe.sha256 \
+            --title "$GITHUB_REF_NAME" --generate-notes --verify-tag

@@ -91,11 +91,16 @@ go build -ldflags="-H windowsgui -s -w" -o WhatsApp.exe .
 
 ### Merilis versi baru
 
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\release.ps1 -Version 1.2.0
+Cara termudah, tanpa Go di komputer sendiri: buat tag versi dan push.
+
+```bash
+git tag v1.2.0
+git push origin v1.2.0
 ```
 
-Skrip ini menjalankan test, membangun `WhatsApp.exe` dengan versi tertanam, dan menulis `WhatsApp.exe.sha256`. Lalu buat rilis di GitHub dengan tag `v1.2.0` (bukan draft atau pre-release) dan unggah **kedua** file. Aplikasi yang sedang dipakai akan menawarkan **Perbarui sekarang**; tanpa file `.sha256`, aplikasi hanya menawarkan tombol Unduh. Tag rilis harus sama dengan versi di exe, kalau tidak aplikasi akan terus menawarkan pembaruan yang sama.
+GitHub Actions (`.github/workflows/release.yml`) menjalankan test, membangun `WhatsApp.exe` dengan versi tertanam, menulis `WhatsApp.exe.sha256`, dan membuat rilisnya dengan kedua file itu. Aplikasi yang sedang dipakai lalu menawarkan **Perbarui sekarang**. Setiap push ke `main` juga diperiksa oleh `.github/workflows/ci.yml` (vet, test, build, sintaks skrip).
+
+Membangun rilis di komputer sendiri juga bisa: `powershell -ExecutionPolicy Bypass -File tools\release.ps1 -Version 1.2.0`, lalu unggah `WhatsApp.exe` dan `WhatsApp.exe.sha256` ke rilis bertag `v1.2.0` (bukan draft atau pre-release). Tag rilis harus sama dengan versi di exe.
 
 ## Struktur proyek
 
