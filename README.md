@@ -48,6 +48,7 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
   Pesan yang datang bersamaan (misalnya setelah komputer bangun dari sleep) digabung menjadi satu ringkasan seperti "12 pesan baru dari 4 chat" alih-alih puluhan notifikasi beruntun; pesan baru dari chat yang sama menggantikan notifikasi lamanya, dan setiap notifikasi punya tombol **Tutup**.
 - **System Tray**: tombol Close menyembunyikan aplikasi ke tray, taskbar berkedip saat ada pesan, tooltip menampilkan jumlah belum dibaca, dan tombol taskbar diberi badge angka merah.
 - **Kunci saat disembunyikan** (opsional): kunci PIN otomatis saat jendela disembunyikan ke tray atau lewat Boss Key.
+- **Pulih otomatis**: jika WhatsApp Web macet (halaman tidak merespons atau tersangkut di layar memuat lebih dari 3 menit), aplikasi memuat ulang halaman sendiri dan memberi tahu alasannya. Jeda antar-pemuatan ulang makin panjang (sampai 30 menit) agar tidak berulang terus saat internet mati.
 - **Mulai otomatis** saat Windows menyala, langsung ke tray. Aktif sejak pertama kali aplikasi dibuka (bisa dimatikan di Pusat Kontrol > Sistem atau menu tray). Entri startup selalu diarahkan ke exe yang sedang dipakai, jadi memindahkan atau mengganti exe tidak membuatnya mati; jika dimatikan lewat Task Manager > Aplikasi startup, aplikasi menampilkannya sebagai nonaktif dan menyalakannya lagi dari aplikasi akan memulihkannya.
 - **Pembaruan otomatis**: sekali sehari aplikasi memeriksa rilis terbaru di GitHub dan menampilkan banner jika ada versi baru. **Perbarui sekarang** mengunduh `WhatsApp.exe` dari rilis repositori ini, memasangnya hanya jika SHA-256-nya cocok dengan `WhatsApp.exe.sha256` di rilis yang sama dan file itu program Windows 64-bit, lalu membuka ulang aplikasi. Versi lama disimpan sebagai `WhatsApp.exe.old` dan dikembalikan bila pemasangan gagal. Sesi login, PIN, catatan, dan pengaturan tidak tersentuh. Ada juga tombol Unduh (halaman rilis) dan Lewati versi ini; pengecekan bisa dimatikan di Pusat Kontrol > Sistem.
 - **Cadangkan & pulihkan pengaturan**: satu file `.json` berisi balasan cepat, catatan, pin & blur chat, radar, tampilan, dan pengaturan notifikasi. PIN dan sesi login tidak ikut. Pusat Kontrol > Sistem.
@@ -121,6 +122,7 @@ Membangun rilis di komputer sendiri juga bisa: `powershell -ExecutionPolicy Bypa
 | `backup.go` | Ekspor & impor pengaturan |
 | `reminders.go` | Pengingat balas |
 | `assets/addon-main.js` | Skrip utama yang di-inject ke WhatsApp Web: privasi, balasan cepat, kunci, catatan, dock |
+| `watchdog.go`, `assets/watchdog.js` | Pulih otomatis saat WhatsApp Web macet |
 | `assets/wa-tools.js` | Nomor telepon yang bisa diklik, toolbar format, label & catatan kontak |
 | `assets/addon-core.js` | Registry selektor, diagnostik, pin, blur per chat, radar, mode ringkas, ekspor |
 | `assets/telegram-main.js` | Skrip yang di-inject ke Telegram Web |
