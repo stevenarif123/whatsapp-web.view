@@ -154,8 +154,6 @@ const (
 	KEY_READ          = 0x20019
 	KEY_WRITE         = 0x20006
 	REG_SZ            = 1
-	runKeyPath        = `Software\Microsoft\Windows\CurrentVersion\Run`
-	runKeyName        = `WhatsAppDesktopLight`
 
 	// Boss Key Global Hotkey (Ctrl + Alt + W)
 	HOTKEY_BOSS  = 1001
@@ -396,67 +394,6 @@ func updateTrayTooltip(text string) {
 func removeTrayIcon() {
 	if globalHwnd != 0 {
 		procShellNotifyIcon.Call(NIM_DELETE, uintptr(unsafe.Pointer(&globalTrayData)))
-	}
-}
-
-func isAppAutoStartEnabled() bool {
-	var hKey windows.Handle
-	subPath, _ := windows.UTF16PtrFromString(runKeyPath)
-	err := windows.RegOpenKeyEx(windows.Handle(HKEY_CURRENT_USER), subPath, 0, KEY_READ, &hKey)
-	if err != nil {
-		return false
-	}
-	defer windows.RegCloseKey(hKey)
-
-	valName, _ := windows.UTF16PtrFromString(runKeyName)
-	var valType uint32
-	var bufLen uint32
-	err = windows.RegQueryValueEx(hKey, valName, nil, &valType, nil, &bufLen)
-	return err == nil && bufLen > 0
-}
-
-func setAppAutoStartEnabled(enabled bool) bool {
-	exePath, err := os.Executable()
-	if err != nil {
-		return false
-	}
-	subPath, _ := windows.UTF16PtrFromString(runKeyPath)
-	valName, _ := windows.UTF16PtrFromString(runKeyName)
-
-	if enabled {
-		var hKey windows.Handle
-		err := windows.RegOpenKeyEx(windows.Handle(HKEY_CURRENT_USER), subPath, 0, KEY_WRITE, &hKey)
-		if err != nil {
-			return false
-		}
-		defer windows.RegCloseKey(hKey)
-
-		cmdValue := fmt.Sprintf("\"%s\" --minimized", exePath)
-		utf16Val, err := syscall.UTF16FromString(cmdValue)
-		if err != nil {
-			return false
-		}
-		byteSize := uint32(len(utf16Val) * 2)
-
-		r, _, _ := procRegSetValueEx.Call(
-			uintptr(hKey),
-			uintptr(unsafe.Pointer(valName)),
-			0,
-			REG_SZ,
-			uintptr(unsafe.Pointer(&utf16Val[0])),
-			uintptr(byteSize),
-		)
-		return r == 0
-	} else {
-		var hKey windows.Handle
-		err := windows.RegOpenKeyEx(windows.Handle(HKEY_CURRENT_USER), subPath, 0, KEY_WRITE, &hKey)
-		if err != nil {
-			return false
-		}
-		defer windows.RegCloseKey(hKey)
-
-		r, _, _ := procRegDeleteVal.Call(uintptr(hKey), uintptr(unsafe.Pointer(valName)))
-		return r == 0 || r == 2
 	}
 }
 
@@ -1233,6 +1170,9 @@ func main() {
 	_, isSingle := checkSingleInstance(mName, wTitle)
 	if !isSingle {
 		os.Exit(0)
+	}
+	if profileID == "1" {
+		ensureAutoStart()
 	}
 	userDataDir := getUserDataDir(profileID)
 	iconFullPath := iconFile("icon.ico", appIconICO)
