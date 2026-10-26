@@ -457,6 +457,56 @@
 		return b;
 	}
 
+	// The rail's own Chat button (first button of the rail, labelled Chat/Chats).
+	function railChatButton() {
+		var rail = one('navRail');
+		if (!rail) return null;
+		return rail.querySelector('button[aria-label="Chat"], button[aria-label="Chats"]') || rail.querySelector('button');
+	}
+
+	// reachable reports whether el is on screen and not covered by something else.
+	function reachable(el) {
+		if (!el) return false;
+		var r = el.getBoundingClientRect();
+		if (r.width < 4 || r.height < 4 || r.right <= 0 || r.left >= innerWidth) return false;
+		var hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+		return !!hit && (hit === el || el.contains(hit));
+	}
+
+	// In the compact layout, WhatsApp's slide-in drawers (Status, Saluran, Pengaturan, ...) must start after
+	// the nav rail, or they cover it and there is no way back to the chats.
+	function alignDrawers(narrow) {
+		var root = document.documentElement;
+		var rail = one('navRail');
+		var drawer = document.querySelector('[data-testid="drawer-left"]');
+		if (!narrow || !rail || !drawer || !drawer.offsetParent) return;
+		var left = Math.max(0, Math.round(rail.getBoundingClientRect().right - drawer.offsetParent.getBoundingClientRect().left));
+		var val = left + 'px';
+		if (root.style.getPropertyValue('--wa-drawer-left') !== val) root.style.setProperty('--wa-drawer-left', val);
+	}
+
+	// "‹ Chat" when the chat list is not on screen, no chat is open and the rail's Chat button cannot be reached.
+	function syncHomeButton(narrow) {
+		var b = document.getElementById('wa-narrow-home');
+		var pane = document.getElementById('pane-side');
+		var show = narrow && !document.getElementById('main') && !reachable(pane) && !reachable(railChatButton());
+		if (!show) { if (b) b.classList.remove('show'); return; }
+		if (!b) {
+			b = document.createElement('button');
+			b.id = 'wa-narrow-home';
+			b.title = 'Kembali ke daftar chat';
+			b.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg><span>Chat</span>';
+			b.addEventListener('click', function () {
+				var chat = railChatButton();
+				if (chat) chat.click();
+				else window.waCloseChat();
+			});
+			document.body.appendChild(b);
+		}
+		b.classList.add('show');
+	}
+	window.waSyncHomeButton = syncHomeButton;
+
 	// Escape closes the open conversation in WhatsApp Web.
 	window.waCloseChat = function () {
 		var target = document.querySelector('#main footer [contenteditable="true"]') || document.querySelector('#main') || document.body;
@@ -477,6 +527,8 @@
 		// The panes are marked in every width: the two-pane layout also uses them (addon.css)
 		markLayout();
 		if (narrow) ensureBackButton();
+		alignDrawers(narrow);
+		syncHomeButton(narrow);
 	}
 	window.waSyncNarrow = syncNarrow;
 

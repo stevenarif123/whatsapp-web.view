@@ -265,12 +265,17 @@ html[data-wa-narrow] body[data-wa-chat-open="1"] [data-wa-pane="list"] { display
 html[data-wa-narrow] body[data-wa-chat-open="1"] #main header { padding-left: 44px !important; }
 
 #wa-narrow-back { display: none; position: fixed; top: 11px; left: 70px; z-index: 2147483000; width: 36px; height: 36px; border-radius: 50%; border: none; background: transparent; color: var(--wa-text-muted); cursor: pointer; align-items: center; justify-content: center; padding: 0; }
+/* "‹ Chat": shown in the compact layout when another tab (Status, Saluran, Pengaturan, ...) fills the window
+   and WhatsApp's own Chat button on the rail cannot be reached. */
+#wa-narrow-home { display: none; position: fixed; top: 58px; left: 12px; z-index: 2147483000; height: 32px; padding: 0 12px 0 8px; border-radius: 16px; border: 1px solid var(--wa-border-strong); background: var(--wa-bg-elevated); color: var(--wa-text); font: 600 12px var(--wa-font); cursor: pointer; align-items: center; gap: 4px; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+#wa-narrow-home:hover { border-color: var(--wa-primary); }
+#wa-narrow-home.show { display: flex; }
 #wa-narrow-back:hover { background: rgba(134, 150, 160, 0.18); color: var(--wa-text); }
 html[data-wa-narrow] body[data-wa-chat-open="1"] #wa-narrow-back { display: flex; }
 
 /* Drawers (settings, contact info...) sit in their own layer that mirrors the two panes. In compact mode
    let each one cover the whole width next to the nav rail, and drop the pane divider. */
 html[data-wa-narrow] [data-testid="drawer-left"],
-html[data-wa-narrow] [data-testid="drawer-middle"] { position: absolute !important; top: 0; bottom: 0; left: 0; right: 0; width: auto !important; max-width: none !important; flex: none !important; border-left: 0 !important; }
+html[data-wa-narrow] [data-testid="drawer-middle"] { position: absolute !important; top: 0; bottom: 0; left: var(--wa-drawer-left, 0px); right: 0; width: auto !important; max-width: none !important; flex: none !important; border-left: 0 !important; }
 /* The floating dock would cover the message box; it stays available from the nav rail button. */
 html[data-wa-narrow] body[data-wa-chat-open="1"] .wa-dock { display: none !important; }
