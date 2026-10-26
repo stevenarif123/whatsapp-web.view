@@ -72,8 +72,17 @@
 		] }
 	};
 
+	// The add-on's own windows (Control Center, lock screen, popups, notes) must never count as WhatsApp's
+	// elements: the Control Center is a role="dialog" too. These class names are the add-on's; WhatsApp's
+	// own classes are generated names.
+	var ADDON_UI = '.wa-modal-backdrop, .wa-modal-box, .wa-tool-pop, .wa-scratchpad';
+	function isAddonUI(el) { return !!(el.closest && el.closest(ADDON_UI)); }
+	window.waIsAddonUI = isAddonUI;
+
 	function qAll(selector, root) {
-		try { return Array.prototype.slice.call((root || document).querySelectorAll(selector)); } catch (e) { return []; }
+		try {
+			return Array.prototype.slice.call((root || document).querySelectorAll(selector)).filter(function (el) { return !isAddonUI(el); });
+		} catch (e) { return []; }
 	}
 
 	// Returns { els, index, selector } for the first candidate that matches.

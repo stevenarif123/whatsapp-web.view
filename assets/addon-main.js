@@ -1023,7 +1023,10 @@
 		// Feature: Status / Story Media Downloader
 		function setupStatusDownloader() {
 			setInterval(function() {
-				var dialog = document.querySelector('div[role="dialog"], div[data-animate-status-v3="true"]');
+				// WhatsApp's own dialogs only; the Control Center is a role="dialog" as well
+				var dialog = [].slice.call(document.querySelectorAll('div[role="dialog"], div[data-animate-status-v3="true"]')).filter(function(d) {
+					return !(window.waIsAddonUI && window.waIsAddonUI(d));
+				})[0];
 				var btn = document.getElementById('wa-status-dl-btn');
 				if (!dialog) {
 					if (btn) btn.style.display = 'none';
