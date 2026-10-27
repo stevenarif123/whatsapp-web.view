@@ -21,7 +21,7 @@ import (
 
 // appVersion is the version of this build. Release builds may override it with
 // -ldflags "-X main.appVersion=1.2.0".
-var appVersion = "1.2.3"
+var appVersion = "1.2.4"
 
 const (
 	updateRepo          = "stevenarif123/whatsapp-web.view"
