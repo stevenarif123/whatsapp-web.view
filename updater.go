@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -272,6 +273,7 @@ func bindUpdates(w webview2.WebView) {
 	})
 	_ = w.Bind("installUpdateNow", func() {
 		report := func(state, msg string) {
+			log.Printf("pembaruan: %s %s", state, msg)
 			data, _ := json.Marshal(map[string]string{"state": state, "message": msg})
 			w.Dispatch(func() { w.Eval(fmt.Sprintf("window.waUpdateProgress && window.waUpdateProgress(%s)", data)) })
 		}

@@ -847,6 +847,14 @@ func switchToWhatsApp() {
 	}
 }
 
+// Telegram creation state, touched only on the UI thread. While the view is being created, its message
+// loop keeps draining the dispatch queue, so a second request (another click, Ctrl+2) can arrive then;
+// it waits in telegramWaiting instead of creating a second view.
+var (
+	telegramCreating bool
+	telegramWaiting  []func()
+)
+
 // ensureTelegram creates the embedded Telegram view if needed and then runs then. A WebView2 controller
 // created while a WebView2 event handler runs (a page binding such as the dock buttons) never finishes
 // initialising, so creation always happens from the dispatch queue, after the current handler returned.
@@ -855,14 +863,69 @@ func ensureTelegram(then func()) {
 		then()
 		return
 	}
+	log.Println("telegram: diminta, view belum ada")
 	globalWebView.Dispatch(func() {
-		if globalTelegramWebView == nil {
-			initTelegramChild()
-			// Creating the view runs its own message loop, which swallows queue wake-ups; wake it again.
-			globalWebView.Dispatch(func() {})
+		if globalTelegramWebView != nil {
+			then()
+			return
 		}
-		then()
+		telegramWaiting = append(telegramWaiting, then)
+		if telegramCreating {
+			log.Printf("telegram: masih dibuat, permintaan ke-%d menunggu", len(telegramWaiting))
+			return
+		}
+		createTelegram()
 	})
+}
+
+func createTelegram() {
+	telegramCreating = true
+	start := time.Now()
+	log.Println("telegram: membuat view")
+	done := make(chan struct{})
+	go func() {
+		// Creation has no timeout of its own; record it when it takes far longer than the usual seconds.
+		for _, after := range []time.Duration{20 * time.Second, 60 * time.Second, 5 * time.Minute} {
+			select {
+			case <-done:
+				return
+			case <-time.After(after - time.Since(start)):
+				log.Printf("telegram: pembuatan view belum selesai setelah %s", after)
+			}
+		}
+	}()
+	initTelegramChild()
+	close(done)
+	telegramCreating = false
+	waiting := telegramWaiting
+	telegramWaiting = nil
+	if globalTelegramWebView == nil {
+		log.Printf("telegram: gagal dibuat setelah %s", time.Since(start).Round(time.Millisecond))
+		return
+	}
+	log.Printf("telegram: view siap dalam %s", time.Since(start).Round(time.Millisecond))
+	for _, f := range waiting {
+		f()
+	}
+}
+
+// watchDispatchQueue records in the diagnostic log when queued UI work waits much longer than it should,
+// which shows up to the user as buttons that do nothing, and wakes the queue again.
+func watchDispatchQueue() {
+	var reported time.Time
+	for range time.Tick(5 * time.Second) {
+		n, since := webview2.PendingDispatch()
+		if n == 0 || time.Since(since) < 10*time.Second {
+			continue
+		}
+		if !since.Equal(reported) {
+			reported = since
+			log.Printf("antrean UI: %d tugas tertahan selama %s", n, time.Since(since).Round(time.Second))
+		}
+		if w := globalWebView; w != nil {
+			w.Dispatch(func() {})
+		}
+	}
 }
 
 func switchToTelegram() {
@@ -1148,6 +1211,13 @@ func main() {
 	}
 
 	if isTelegram {
+		setupLogging("telegram")
+	} else {
+		setupLogging(profileID)
+	}
+	log.Printf("mulai: versi %s, argumen %q", appVersion, os.Args[1:])
+
+	if isTelegram {
 		currentWindowTitle = telegramWindowTitle
 		currentMutexName = telegramMutexName
 		_, isSingle := checkSingleInstance(telegramMutexName, telegramWindowTitle)
@@ -1210,6 +1280,7 @@ func main() {
 	hwnd := uintptr(w.Window())
 	globalHwnd = hwnd
 	globalWebView = w
+	go watchDispatchQueue()
 
 	setDarkWindowFrame(hwnd)
 	w.SetTitle(wTitle)

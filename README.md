@@ -58,6 +58,8 @@ Panel pengaturan dengan lima bagian: **Privasi**, **Tampilan**, **Chat & Alat**,
 ### Diagnostik
 WhatsApp Web sering mengubah struktur halamannya sehingga fitur yang bergantung pada tampilan bisa berhenti bekerja. Tab **Diagnostik** memeriksa elemen WhatsApp yang dipakai aplikasi ini (daftar chat, header, pesan, kotak ketik, dan lainnya) dan menunjukkan mana yang masih dikenali, mana yang memakai selektor cadangan, dan mana yang hilang. Semua selektor ada di satu tempat: [assets/addon-core.js](assets/addon-core.js).
 
+Untuk masalah di luar halaman (Telegram tidak mau terbuka, tombol tidak bereaksi, pembaruan gagal), aplikasi menulis log diagnostik ke `%APPDATA%\WhatsAppDesktopLight\app.log` (akun ke-2: `app-profile2.log`; maksimal 1 MB, versi sebelumnya disimpan sebagai `.1`). Log mencatat waktu mulai, langkah pembaruan, pembuatan Telegram, dan antrean UI yang tertahan, tanpa nama chat atau isi pesan. Lampirkan file ini saat melaporkan masalah.
+
 ## Yang tidak tersedia
 
 Fitur berikut **tidak ada** di aplikasi ini: menyembunyikan centang biru, anti-hapus pesan (anti-revoke), menyembunyikan status mengetik atau online, dan melihat status tanpa meninggalkan jejak. Semuanya mengharuskan mengubah komunikasi dengan server WhatsApp. Itu melanggar ketentuan layanan WhatsApp dan berisiko membuat akun dibatasi atau diblokir.

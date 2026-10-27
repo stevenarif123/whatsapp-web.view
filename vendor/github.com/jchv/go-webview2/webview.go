@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strconv"
 	"sync"
+	"time"
 	"unsafe"
 
 	"github.com/jchv/go-webview2/internal/w32"
@@ -250,6 +251,8 @@ func wndproc(hwnd, msg, wp, lp uintptr) uintptr {
 			if w.autofocus {
 				w.browser.Focus()
 			}
+		case w32.WMApp:
+			drainDispatch()
 		case w32.WMClose:
 			_, _, _ = w32.User32DestroyWindow.Call(hwnd)
 		case w32.WMDestroy:
@@ -371,13 +374,8 @@ func (w *webview) Run() {
 			0,
 		)
 		if msg.Message == w32.WMApp {
-			dispatchMu.Lock()
-			q := dispatchq
-			dispatchq = nil
-			dispatchMu.Unlock()
-			for _, v := range q {
-				v()
-			}
+			drainDispatch()
+			continue
 		} else if msg.Message == w32.WMQuit {
 			return
 		}
@@ -461,15 +459,56 @@ func (w *webview) Eval(js string) {
 // The dispatch queue is shared by all webviews: a webview embedded in another one's window (the
 // Telegram child) never calls Run, so its queued work must be drained by the Run loop of its host.
 var (
-	dispatchMu sync.Mutex
-	dispatchq  []func()
+	dispatchMu    sync.Mutex
+	dispatchq     []func()
+	dispatchSince time.Time // when the oldest function still in the queue was added
 )
 
 func (w *webview) Dispatch(f func()) {
 	dispatchMu.Lock()
+	if len(dispatchq) == 0 {
+		dispatchSince = time.Now()
+	}
 	dispatchq = append(dispatchq, f)
 	dispatchMu.Unlock()
+	w.wake()
+}
+
+// wake makes the UI thread drain the queue. The wake-up goes to the window: a modal or nested message
+// loop (a menu, a dialog, creating another WebView2) still delivers window messages but drops thread
+// messages, which left queued work stuck until the next wake-up. The thread message is the fallback
+// before the window exists.
+func (w *webview) wake() {
+	if w.hwnd != 0 {
+		if r, _, _ := w32.User32PostMessageW.Call(w.hwnd, w32.WMApp, 0, 0); r != 0 {
+			return
+		}
+	}
 	_, _, _ = w32.User32PostThreadMessageW.Call(w.mainthread, w32.WMApp, 0, 0)
+}
+
+// drainDispatch runs the queued functions on the UI thread. It may run again inside one of them (from a
+// nested message loop); each run takes the functions queued so far, so none runs twice.
+func drainDispatch() {
+	for {
+		dispatchMu.Lock()
+		q := dispatchq
+		dispatchq = nil
+		dispatchMu.Unlock()
+		if len(q) == 0 {
+			return
+		}
+		for _, v := range q {
+			v()
+		}
+	}
+}
+
+// PendingDispatch reports how many functions wait in the dispatch queue and since when the oldest waits.
+func PendingDispatch() (int, time.Time) {
+	dispatchMu.Lock()
+	defer dispatchMu.Unlock()
+	return len(dispatchq), dispatchSince
 }
 
 func (w *webview) Bind(name string, f interface{}) error {
