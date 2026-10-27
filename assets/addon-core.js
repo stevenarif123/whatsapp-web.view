@@ -529,6 +529,30 @@
 		if (narrow) ensureBackButton();
 		alignDrawers(narrow);
 		syncHomeButton(narrow);
+		fitDock();
+	}
+
+	// The floating dock must stay inside the chat-list column, or it covers the message box. Show it with
+	// labels when they fit and as icons otherwise. fullRight is the right edge with labels, measured while
+	// they are shown and measured again when the dock gains or loses a button.
+	var dockFit = { items: -1, fullRight: 0 };
+	function fitDock() {
+		var dock = document.getElementById('wa-messenger-tabs');
+		if (!dock) return;
+		var compact = dock.classList.contains('wa-dock-compact');
+		if (dockFit.items !== dock.childElementCount) {
+			dockFit.items = dock.childElementCount;
+			if (compact) dock.classList.remove('wa-dock-compact');
+			dockFit.fullRight = 0;
+		}
+		if (!dock.classList.contains('wa-dock-compact')) {
+			var r = dock.getBoundingClientRect();
+			if (r.width) dockFit.fullRight = r.right;
+		}
+		var list = document.querySelector('[data-wa-pane="list"]');
+		var lr = list && list.getBoundingClientRect();
+		var limit = lr && lr.width ? lr.right - 12 : window.innerWidth - 12;
+		dock.classList.toggle('wa-dock-compact', dockFit.fullRight + 8 > limit);
 	}
 	window.waSyncNarrow = syncNarrow;
 

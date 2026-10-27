@@ -179,12 +179,10 @@ textarea.wa-input { height: auto; padding: 8px 11px; resize: vertical; min-heigh
 .wa-dock-sep { width: 1px; height: 14px; background: var(--wa-border); margin: 0 1px; }
 .wa-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--wa-primary); display: inline-block; }
 
-/* In narrow windows (e.g. snapped to half the screen) shrink the dock to icons so it stays inside
-   the chat-list column instead of covering the message composer. */
-@media (max-width: 1150px) {
-  .wa-dock-item { padding: 6px 9px; }
-  .wa-dock-item > span:not(.wa-status-dot) { display: none; }
-}
+/* When the labels would reach past the chat-list column, shrink the dock to icons so it never covers
+   the message composer (addon-core.js fitDock sets the class). */
+.wa-dock.wa-dock-compact .wa-dock-item { padding: 6px 9px; }
+.wa-dock.wa-dock-compact .wa-dock-item > span:not(.wa-status-dot) { display: none; }
 
 /* Hide the floating dock while the control center is open so it never overlaps. */
 body:has(#wa-addon-modal[style*="flex"]) .wa-dock { visibility: hidden !important; }
